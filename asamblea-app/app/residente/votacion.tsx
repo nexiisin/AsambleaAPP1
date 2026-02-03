@@ -13,6 +13,8 @@ export default function Votacion() {
   const [voted, setVoted] = useState(false);
   const [viviendaId, setViviendaId] = useState<string | null>(null);
   const [propuestaCerrada, setPropuestaCerrada] = useState(false);
+  const [esApoderadoAprobado, setEsApoderadoAprobado] = useState(false);
+  const [casaRepresentadaId, setCasaRepresentadaId] = useState<string | null>(null);
 
   const cargarPropuestaActiva = useCallback(async () => {
     if (!asambleaId) return;
@@ -83,10 +85,37 @@ export default function Votacion() {
     const cargarAsistencia = async () => {
       if (!asistenciaId) return;
       try {
-        const { data } = await supabase.from('asistencias').select('vivienda_id').eq('id', asistenciaId).single();
+        const { data } = await supabase
+          .from('asistencias')
+          .select('vivienda_id, es_apoderado, estado_apoderado, casa_representada')
+          .eq('id', asistenciaId)
+          .single();
+        
         setViviendaId(data?.vivienda_id ?? null);
+        
+        // Si es apoderado aprobado, cargar la vivienda_id de la casa representada
+        if (data?.es_apoderado && data?.estado_apoderado === 'APROBADO' && data?.casa_representada) {
+          setEsApoderadoAprobado(true);
+          
+          // Buscar la vivienda_id para el número de casa representada
+          const { data: casaData } = await supabase
+            .from('viviendas')
+            .select('id')
+            .eq('numero_casa', data.casa_representada)
+            .single();
+          
+          if (casaData?.id) {
+            setCasaRepresentadaId(casaData.id);
+            console.log('✅ Apoderado aprobado - Casa representada ID:', casaData.id);
+          }
+        } else {
+          setEsApoderadoAprobado(false);
+          setCasaRepresentadaId(null);
+        }
       } catch (e) {
         console.error('Error cargando asistencia:', e);
+        setEsApoderadoAprobado(false);
+        setCasaRepresentadaId(null);
       }
     };
 
@@ -148,12 +177,39 @@ export default function Votacion() {
         return;
       }
 
-      const { error } = await supabase.from('votos').insert({
-        propuesta_id: propuesta.id,
-        vivienda_id: viviendaId,
-        asistencia_id: asistenciaId,
-        tipo_voto: tipo,
-      });
+      // Preparar los votos a insertar
+      const votos = [
+        {
+          propuesta_id: propuesta.id,
+          vivienda_id: viviendaId,
+          asistencia_id: asistenciaId,
+          tipo_voto: tipo,
+        }
+      ];
+
+      // Si es apoderado aprobado, agregar voto para la casa representada
+      if (esApoderadoAprobado && casaRepresentadaId) {
+        // Verificar que no haya voto previo para la casa representada tampoco
+        const { data: existingCasaRep } = await supabase
+          .from('votos')
+          .select('id')
+          .eq('propuesta_id', propuesta.id)
+          .eq('vivienda_id', casaRepresentadaId)
+          .limit(1);
+
+        if (!existingCasaRep || existingCasaRep.length === 0) {
+          votos.push({
+            propuesta_id: propuesta.id,
+            vivienda_id: casaRepresentadaId,
+            asistencia_id: asistenciaId,
+            tipo_voto: tipo,
+          });
+          console.log('🗳️ Apoderado votando con dos viviendas:', viviendaId, casaRepresentadaId);
+        }
+      }
+
+      // Insertar todos los votos
+      const { error } = await supabase.from('votos').insert(votos);
 
       if (error) {
         console.error('Error insertando voto:', error);
@@ -161,6 +217,9 @@ export default function Votacion() {
       } else {
         // Marcar localmente como votado para mostrar el mensaje bonito
         setVoted(true);
+        if (esApoderadoAprobado && casaRepresentadaId) {
+          console.log('✅ Voto registrado para ambas viviendas');
+        }
       }
     } catch (e) {
       console.error('Error enviando voto:', e);

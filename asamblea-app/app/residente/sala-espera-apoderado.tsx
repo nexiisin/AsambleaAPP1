@@ -102,8 +102,23 @@ export default function SalaEsperaApoderado() {
       )
       .subscribe();
 
+    const broadcastChannel = supabase
+      .channel(`asamblea-broadcast-${asambleaId}`)
+      .on('broadcast', { event: 'asistencia' }, (payload) => {
+        try {
+          const targetId = payload?.payload?.asistenciaId;
+          if (targetId && asistenciaId && targetId === asistenciaId) {
+            router.push({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
+          }
+        } catch (e) {
+          console.error('Error redirigiendo a asistencia:', e);
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(broadcastChannel);
     };
   }, [asambleaId, asistenciaId, numeroCasa]);
 

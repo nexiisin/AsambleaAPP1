@@ -187,10 +187,12 @@ export default function SalaEspera() {
     // Suscripción broadcast para acciones del admin (ej. redirigir a formulario de asistencia)
     const broadcastChannel = supabase
       .channel(`asamblea-broadcast-${asambleaId}`)
-      .on('broadcast', { event: 'asistencia' }, () => {
+      .on('broadcast', { event: 'asistencia' }, (payload) => {
         try {
-          // redirigir residente al formulario de cierre/asistencia
-          router.push({ pathname: '/residente/asistencia', params: { asambleaId } });
+          const targetId = payload?.payload?.asistenciaId;
+          if (targetId && asistenciaId && targetId === asistenciaId) {
+            router.push({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
+          }
         } catch (e) {
           console.error('Error redirigiendo a asistencia:', e);
         }

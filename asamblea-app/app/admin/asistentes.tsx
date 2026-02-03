@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,7 @@ export default function AdminAsistentes() {
   const [totalAsistentes, setTotalAsistentes] = useState(0);
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
+  const broadcastChannelRef = useRef<any>(null);
 
   const cargarAsistentes = async () => {
     if (!asambleaId) return;
@@ -106,10 +107,34 @@ export default function AdminAsistentes() {
       )
       .subscribe();
 
+    const broadcastChannel = supabase.channel(`asamblea-broadcast-${asambleaId}`);
+    broadcastChannel.subscribe();
+    broadcastChannelRef.current = broadcastChannel;
+
     return () => {
       supabase.removeChannel(channel);
+      if (broadcastChannelRef.current) {
+        supabase.removeChannel(broadcastChannelRef.current);
+      }
     };
   }, [asambleaId]);
+
+  const permitirSalidaAnticipada = async (asistente: Asistente) => {
+    if (!asambleaId || !asistente?.id) return;
+
+    try {
+      const channel = broadcastChannelRef.current;
+      if (!channel) return;
+
+      await channel.send({
+        type: 'broadcast',
+        event: 'asistencia',
+        payload: { asistenciaId: asistente.id },
+      });
+    } catch (e) {
+      console.error('Error enviando salida anticipada:', e);
+    }
+  };
 
   const asistentesFiltrados = useMemo(() => {
     if (!busqueda.trim()) return asistentes;
@@ -160,6 +185,13 @@ export default function AdminAsistentes() {
               : 'N/A'}
           </Text>
         </View>
+
+        <TouchableOpacity
+          style={styles.salidaButton}
+          onPress={() => permitirSalidaAnticipada(item)}
+        >
+          <Text style={styles.salidaButtonText}>Permitir salida anticipada</Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -276,4 +308,17 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   emptyText: { color: '#6b7280', fontSize: 15 },
+  salidaButton: {
+    marginTop: 12,
+    backgroundColor: '#16a34a',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  salidaButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
 });

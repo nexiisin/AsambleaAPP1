@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   },
 
   backButtonText: {
-    color: '#6b7280',
+    color: '#065f46',
     fontSize: 15,
     fontWeight: '500',
   },

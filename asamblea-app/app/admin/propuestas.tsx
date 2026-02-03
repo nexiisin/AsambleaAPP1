@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 
 const PANEL_WIDTH = 520;
@@ -162,6 +162,9 @@ export default function Propuestas() {
   return (
     <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.page}>
       <View style={styles.container}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>← Volver</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>📋 Listado de propuestas</Text>
 
         <TouchableOpacity
@@ -303,6 +306,8 @@ export default function Propuestas() {
 const styles = StyleSheet.create({
   page: { flex: 1, alignItems: 'center' },
   container: { width: '100%', maxWidth: 700, padding: 16, alignItems: 'center' },
+  backButton: { alignSelf: 'flex-start', marginBottom: 8 },
+  backButtonText: { color: '#065f46', fontWeight: '700', fontSize: 15 },
   title: { fontSize: 26, fontWeight: '800', marginBottom: 16, color: '#1f2937' },
   createButton: { 
     backgroundColor: '#16a34a', 

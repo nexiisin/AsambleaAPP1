@@ -325,6 +325,9 @@ export default function AdminResultados() {
   return (
     <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.page}>
       <View style={styles.container}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>← Volver</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>📊 Resultados de propuestas</Text>
 
         {propuestas.length === 0 ? (
@@ -393,17 +396,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '800', marginBottom: 24, color: '#1f2937', textAlign: 'center' },
   
   backButton: {
-    backgroundColor: '#f3f4f6',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
+    backgroundColor: 'transparent',
+    paddingVertical: 6,
+    paddingHorizontal: 0,
     marginBottom: 16,
     alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
   backButtonText: {
-    color: '#374151',
+    color: '#065f46',
     fontWeight: '600',
     fontSize: 14,
   },

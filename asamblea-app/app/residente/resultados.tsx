@@ -128,6 +128,28 @@ export default function Resultados() {
     cargarResultados();
   }, [cargarResultados]);
 
+  useEffect(() => {
+    if (!asambleaId || !asistenciaId) return;
+
+    const broadcastChannel = supabase
+      .channel(`asamblea-broadcast-${asambleaId}`)
+      .on('broadcast', { event: 'asistencia' }, (payload) => {
+        try {
+          const targetId = payload?.payload?.asistenciaId;
+          if (targetId && targetId === asistenciaId) {
+            router.push({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
+          }
+        } catch (e) {
+          console.error('Error redirigiendo a asistencia:', e);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(broadcastChannel);
+    };
+  }, [asambleaId, asistenciaId]);
+
   if (loading) {
     return (
       <LinearGradient colors={["#5fba8b", "#d9f3e2"]} style={styles.container}>
@@ -145,7 +167,7 @@ export default function Resultados() {
             style={styles.backBtn} 
             onPress={() => router.push({ pathname: '/residente/sala-espera', params: { asambleaId, asistenciaId } })}
           >
-            <Text style={styles.backBtnText}>Volver</Text>
+            <Text style={styles.backBtnText}>← Volver</Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -317,7 +339,7 @@ export default function Resultados() {
               router.replace({ pathname: '/residente/sala-espera', params: { asambleaId, asistenciaId, fromResults: 'true' } });
             }}
           >
-            <Text style={styles.backBtnText}>Volver a sala de espera</Text>
+            <Text style={styles.backBtnText}>← Volver a sala de espera</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -541,17 +563,14 @@ const styles = StyleSheet.create({
 
   backBtn: { 
     width: '100%',
-    backgroundColor: '#f3f4f6', 
-    paddingVertical: 14, 
-    paddingHorizontal: 24, 
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    backgroundColor: 'transparent', 
+    paddingVertical: 10, 
+    paddingHorizontal: 0, 
     alignItems: 'center',
   },
   backBtnText: { 
-    color: '#374151', 
-    fontWeight: '600',
+    color: '#065f46', 
+    fontWeight: '700',
     fontSize: 15,
   },
 });
