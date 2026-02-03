@@ -360,11 +360,11 @@ export default function AdminAsamblea() {
             <View style={styles.confirmModalStats}>
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Asistentes registrados</Text>
-                <Text style={styles.statValue}>{totalAsistentes}</Text>
+                <Text style={styles.confirmStatValue}>{totalAsistentes}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Propuestas creadas</Text>
-                <Text style={styles.statValue}>{propuestas.length}</Text>
+                <Text style={styles.confirmStatValue}>{propuestas.length}</Text>
               </View>
             </View>
 
@@ -663,7 +663,7 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: '500',
   },
-  statValue: {
+  confirmStatValue: {
     fontSize: 20,
     fontWeight: '700',
     color: '#16a34a',
