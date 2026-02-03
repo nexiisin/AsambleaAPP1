@@ -14,7 +14,7 @@ Bueno Se agregaron cambios y se arreglaron bugs, se agrego los apoderados, tambi
 
 punto a destacar
 
-arreglar los problemas que tiene la aplicaccion al momento de mostrar los resultados y cambiar el flujo de los resultados 
+arreglar los problemas que tiene la aplicaccion al momento de mostrar los resultados y cambiar el flujo de los resultados (listo)
 
 faltantes 
 
@@ -24,4 +24,4 @@ descargar los certificados
 
  boton para devolver a los recidentes a la sala de espera
 
- cambiar logo de ventana deo google y tambien, cambiar el nombre de la pagina a altos del guali
+ cambiar logo de ventana de google y tambien, cambiar el nombre de la pagina a altos del guali

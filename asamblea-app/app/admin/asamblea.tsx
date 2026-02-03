@@ -306,13 +306,13 @@ export default function AdminAsamblea() {
           />
 
           <Action
-            text="� Mostrar Código"
+            text="❕ Mostrar Código"
             color="#8b5cf6"
             onPress={() => setCodigoModalVisible(true)}
           />
 
           <Action
-            text="�📋 Listado de propuestas"
+            text="📋 Listado de propuestas"
             color="#2563eb"
             onPress={() =>
               router.push({ pathname: '/admin/propuestas', params: { asambleaId } })

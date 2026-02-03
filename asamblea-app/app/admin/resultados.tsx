@@ -64,11 +64,26 @@ export default function AdminResultados() {
         .eq('propuesta_id', propuestaId)
         .eq('tipo_voto', 'NO');
 
-      // Obtener asistentes (los que se unieron a la asamblea)
-      const { count: asistentes } = await supabase
+      // Obtener asistencias (incluyendo apoderados)
+      const { data: asistenciasData } = await supabase
         .from('asistencias')
-        .select('vivienda_id', { count: 'exact', head: true })
+        .select('vivienda_id, es_apoderado, estado_apoderado, casa_representada')
         .eq('asamblea_id', asambleaId);
+
+      // Contar viviendas representadas (incluyendo las representadas por apoderados)
+      let viviendasRepresentadas = new Set<string>();
+      
+      asistenciasData?.forEach((asistencia) => {
+        // Agregar la vivienda del asistente
+        viviendasRepresentadas.add(asistencia.vivienda_id);
+        
+        // Si es apoderado aprobado, agregar la casa que representa
+        if (asistencia.es_apoderado && asistencia.estado_apoderado === 'APROBADO' && asistencia.casa_representada) {
+          viviendasRepresentadas.add(asistencia.casa_representada);
+        }
+      });
+      
+      const asistentes = viviendasRepresentadas.size;
 
       const totalVotos = (votosSi || 0) + (votosNo || 0);
       const noVotaron = Math.max(0, (asistentes || 0) - totalVotos);
@@ -207,100 +222,85 @@ export default function AdminResultados() {
               </View>
             </View>
 
-            {/* Gráfico de columnas */}
-            <View style={styles.chartContainer}>
-              <Text style={styles.chartTitle}>Resultados detallados</Text>
-              
-              <View style={styles.columnsContainer}>
-                {/* Columna SI */}
-                <View style={styles.columnWrapper}>
-                  <View style={styles.columnBar}>
-                    <View 
-                      style={[
-                        styles.columnFill, 
-                        styles.columnFillSi,
-                        { height: `${totalAsistentes > 0 ? (stats.votos_si / totalAsistentes) * 100 : 0}%` }
-                      ]} 
-                    />
+            {/* Gráfico de columnas compacto */}
+            <View style={styles.compactChartContainer}>
+              <View style={styles.chartsRow}>
+                {/* Barra SI */}
+                <View style={styles.compactColumn}>
+                  <View style={styles.compactBarWrapper}>
+                    <View style={styles.compactBar}>
+                      <View 
+                        style={[
+                          styles.compactBarFill,
+                          styles.barFillSi,
+                          { height: `${Math.min(100, totalAsistentes > 0 ? (stats.votos_si / totalAsistentes) * 100 : 0)}%` }
+                        ]}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.columnStats}>
-                    <Text style={styles.columnValue}>{stats.votos_si}</Text>
-                    <Text style={styles.columnPercentage}>{porcentajeSi}%</Text>
-                  </View>
-                  <View style={styles.columnLabelContainer}>
-                    <Text style={styles.columnLabel}>👍</Text>
-                    <Text style={styles.columnLabel}>SÍ</Text>
-                  </View>
+                  <Text style={styles.compactBarValue}>{stats.votos_si}</Text>
+                  <Text style={styles.compactBarPercentage}>{porcentajeSi}%</Text>
+                  <Text style={styles.compactBarEmoji}>👍</Text>
+                  <Text style={styles.compactBarLabel}>SÍ</Text>
                 </View>
 
-                {/* Columna NO */}
-                <View style={styles.columnWrapper}>
-                  <View style={styles.columnBar}>
-                    <View 
-                      style={[
-                        styles.columnFill, 
-                        styles.columnFillNo,
-                        { height: `${totalAsistentes > 0 ? (stats.votos_no / totalAsistentes) * 100 : 0}%` }
-                      ]} 
-                    />
+                {/* Barra NO */}
+                <View style={styles.compactColumn}>
+                  <View style={styles.compactBarWrapper}>
+                    <View style={styles.compactBar}>
+                      <View 
+                        style={[
+                          styles.compactBarFill,
+                          styles.barFillNo,
+                          { height: `${Math.min(100, totalAsistentes > 0 ? (stats.votos_no / totalAsistentes) * 100 : 0)}%` }
+                        ]}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.columnStats}>
-                    <Text style={styles.columnValue}>{stats.votos_no}</Text>
-                    <Text style={styles.columnPercentage}>{porcentajeNo}%</Text>
-                  </View>
-                  <View style={styles.columnLabelContainer}>
-                    <Text style={styles.columnLabel}>👎</Text>
-                    <Text style={styles.columnLabel}>NO</Text>
-                  </View>
+                  <Text style={styles.compactBarValue}>{stats.votos_no}</Text>
+                  <Text style={styles.compactBarPercentage}>{porcentajeNo}%</Text>
+                  <Text style={styles.compactBarEmoji}>👎</Text>
+                  <Text style={styles.compactBarLabel}>NO</Text>
                 </View>
 
-                {/* Columna No votaron */}
-                <View style={styles.columnWrapper}>
-                  <View style={styles.columnBar}>
-                    <View 
-                      style={[
-                        styles.columnFill, 
-                        styles.columnFillPending,
-                        { height: `${totalAsistentes > 0 ? (stats.no_votaron / totalAsistentes) * 100 : 0}%` }
-                      ]} 
-                    />
+                {/* Barra No votaron */}
+                <View style={styles.compactColumn}>
+                  <View style={styles.compactBarWrapper}>
+                    <View style={styles.compactBar}>
+                      <View 
+                        style={[
+                          styles.compactBarFill,
+                          styles.barFillPending,
+                          { height: `${Math.min(100, totalAsistentes > 0 ? (stats.no_votaron / totalAsistentes) * 100 : 0)}%` }
+                        ]}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.columnStats}>
-                    <Text style={styles.columnValue}>{stats.no_votaron}</Text>
-                    <Text style={styles.columnPercentage}>{porcentajeNoVotaron}%</Text>
-                  </View>
-                  <View style={styles.columnLabelContainer}>
-                    <Text style={styles.columnLabel}>⏳</Text>
-                    <Text style={styles.columnLabel}>No</Text>
-                    <Text style={styles.columnLabel}>votaron</Text>
-                  </View>
+                  <Text style={styles.compactBarValue}>{stats.no_votaron}</Text>
+                  <Text style={styles.compactBarPercentage}>{porcentajeNoVotaron}%</Text>
+                  <Text style={styles.compactBarEmoji}>⏳</Text>
+                  <Text style={styles.compactBarLabel}>No votaron</Text>
                 </View>
 
-                {/* Columna No asistentes */}
-                <View style={styles.columnWrapper}>
-                  <View style={styles.columnBar}>
-                    <View 
-                      style={[
-                        styles.columnFill, 
-                        styles.columnFillAbsent,
-                        { height: `${stats.total_viviendas > 0 ? (stats.no_asistentes / stats.total_viviendas) * 100 : 0}%` }
-                      ]} 
-                    />
+                {/* Barra No asistentes */}
+                <View style={styles.compactColumn}>
+                  <View style={styles.compactBarWrapper}>
+                    <View style={styles.compactBar}>
+                      <View 
+                        style={[
+                          styles.compactBarFill,
+                          styles.barFillAbsent,
+                          { height: `${Math.min(100, stats.total_viviendas > 0 ? (stats.no_asistentes / stats.total_viviendas) * 100 : 0)}%` }
+                        ]}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.columnStats}>
-                    <Text style={styles.columnValue}>{stats.no_asistentes}</Text>
-                    <Text style={styles.columnPercentage}>{porcentajeNoAsistentes}%</Text>
-                  </View>
-                  <View style={styles.columnLabelContainer}>
-                    <Text style={styles.columnLabel}>❌</Text>
-                    <Text style={styles.columnLabel}>No</Text>
-                    <Text style={styles.columnLabel}>asistieron</Text>
-                  </View>
+                  <Text style={styles.compactBarValue}>{stats.no_asistentes}</Text>
+                  <Text style={styles.compactBarPercentage}>{porcentajeNoAsistentes}%</Text>
+                  <Text style={styles.compactBarEmoji}>❌</Text>
+                  <Text style={styles.compactBarLabel}>No asistieron</Text>
                 </View>
               </View>
-              
-              {/* Línea base */}
-              <View style={styles.baseLine} />
             </View>
 
             {/* Resultado final */}
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#ffffff',
     borderRadius: 20,
-    padding: 20,
+    padding: 32,
     marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -551,20 +551,20 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   chartTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '800',
     color: '#1f2937',
-    marginBottom: 16,
+    marginBottom: 24,
     textAlign: 'center',
   },
   columnsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-end',
-    height: 160,
-    gap: 8,
-    paddingHorizontal: 4,
-    marginBottom: 8,
+    height: 180,
+    gap: 12,
+    paddingHorizontal: 8,
+    marginBottom: 16,
   },
   baseLine: {
     width: '100%',
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   },
   columnBar: {
     width: '100%',
-    height: 160,
+    height: 100,
     backgroundColor: '#f3f4f6',
     borderRadius: 10,
     justifyContent: 'flex-end',
@@ -613,17 +613,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   columnStats: {
-    marginTop: 10,
+    marginTop: 14,
     alignItems: 'center',
-    height: 40,
+    height: 50,
   },
   columnValue: {
-    fontSize: 19,
+    fontSize: 24,
     fontWeight: '900',
     color: '#1f2937',
   },
   columnPercentage: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: '#6b7280',
   },
@@ -666,5 +666,79 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     textAlign: 'center',
+  },
+
+  // Estilos para gráfico compacto
+  compactChartContainer: {
+    width: '100%',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  chartsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  compactColumn: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  compactBarWrapper: {
+    height: 120,
+    justifyContent: 'flex-end',
+  },
+  compactBar: {
+    width: 32,
+    height: 120,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  compactBarFill: {
+    width: '100%',
+    borderRadius: 6,
+  },
+  barFillSi: {
+    backgroundColor: '#22c55e',
+  },
+  barFillNo: {
+    backgroundColor: '#ef4444',
+  },
+  barFillPending: {
+    backgroundColor: '#f59e0b',
+  },
+  barFillAbsent: {
+    backgroundColor: '#9ca3af',
+  },
+  compactBarValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1f2937',
+  },
+  compactBarPercentage: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6b7280',
+  },
+  compactBarEmoji: {
+    fontSize: 16,
+    marginVertical: 2,
+  },
+  compactBarLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#4b5563',
+    textAlign: 'center',
+    lineHeight: 12,
   },
 });

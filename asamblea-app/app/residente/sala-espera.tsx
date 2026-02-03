@@ -40,6 +40,7 @@ export default function SalaEspera() {
   
   // Ref para evitar redirecciones infinitas
   const lastPropuestaResultadosId = useRef<string | null>(null);
+  const fromResultsProcessed = useRef(false);
 
   useEffect(() => {
     // Animación de entrada
@@ -90,7 +91,7 @@ export default function SalaEspera() {
       
       // Redirigir automáticamente si hay resultados publicados
       // EXCEPTO si el usuario viene intencionalmente desde la pantalla de resultados
-      if (asambleaData.propuesta_resultados_id && !fromResults) {
+      if (asambleaData.propuesta_resultados_id && !fromResults && !fromResultsProcessed.current) {
         if (lastPropuestaResultadosId.current !== asambleaData.propuesta_resultados_id) {
           console.log('➡️ Redirigiendo a resultados (NUEVO), propuestaId:', asambleaData.propuesta_resultados_id);
           lastPropuestaResultadosId.current = asambleaData.propuesta_resultados_id;
@@ -106,13 +107,13 @@ export default function SalaEspera() {
         } else {
           console.log('⏸️ Ya se mostró esta propuesta de resultados, no redirigir');
         }
-      } else if (fromResults) {
+      } else if (fromResults && !fromResultsProcessed.current) {
         console.log('🔙 Usuario regresó intencionalmente desde resultados, no redirigir');
-        // Resetear el parámetro para que no afecte navegaciones futuras
-        router.setParams({ fromResults: undefined });
+        fromResultsProcessed.current = true;
       } else if (!asambleaData.propuesta_resultados_id) {
-        // Si se limpia propuesta_resultados_id, resetear el ref
+        // Si se limpia propuesta_resultados_id, resetear los refs
         lastPropuestaResultadosId.current = null;
+        fromResultsProcessed.current = false;
       }
       
       setHayPropuestaActiva(false);
