@@ -165,40 +165,64 @@ export default function ResidenteScreen() {
     }
 
     // 2️⃣ insertar asistencia
+    console.log('💾 Intentando insertar asistencia con datos:', {
+      asamblea_id: asambleaId,
+      vivienda_id: vivienda.id,
+      nombre_asistente: nombreAsistente,
+      es_apoderado: esApoderado,
+      casa_representada: esApoderado ? casaRepresentada : null,
+      estado_apoderado: esApoderado ? 'PENDIENTE' : null,
+    });
+
     const { data: asistencia, error } = await supabase
       .from('asistencias')
       .insert({
         asamblea_id: asambleaId,
         vivienda_id: vivienda.id,
         nombre_asistente: nombreAsistente,
-        apellido_propietario: apellidoPropietario,
         es_apoderado: esApoderado,
-        vivienda_representada_id: esApoderado
-          ? vivienda.id
-          : null,
+        casa_representada: esApoderado ? casaRepresentada : null,
+        estado_apoderado: esApoderado ? 'PENDIENTE' : null,
       })
       .select()
       .single();
 
+    console.log('📤 Resultado inserción:', { asistencia, error });
+
     setCargando(false);
 
     if (error || !asistencia) {
+      console.error('❌ Error completo:', JSON.stringify(error, null, 2));
       Alert.alert(
         'Error',
-        'No se pudo registrar la asistencia'
+        `No se pudo registrar la asistencia: ${error?.message || 'Error desconocido'}`
       );
       return;
     }
 
-    // 3️⃣ ir a sala de espera
-    router.replace({
-      pathname: '/residente/sala-espera',
-      params: {
-        asambleaId,
-        asistenciaId: asistencia.id,
-        numeroCasa,
-      },
-    });
+    // 3️⃣ Redirigir según el tipo de registro
+    if (esApoderado) {
+      // Si es apoderado, ir a sala de espera especial
+      router.replace({
+        pathname: '/residente/sala-espera-apoderado',
+        params: {
+          asambleaId,
+          asistenciaId: asistencia.id,
+          numeroCasa,
+          casaRepresentada,
+        },
+      });
+    } else {
+      // Si no es apoderado, ir a sala de espera normal
+      router.replace({
+        pathname: '/residente/sala-espera',
+        params: {
+          asambleaId,
+          asistenciaId: asistencia.id,
+          numeroCasa,
+        },
+      });
+    }
   };
 
   return (

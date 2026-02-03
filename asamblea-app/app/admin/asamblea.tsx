@@ -26,6 +26,7 @@ export default function AdminAsamblea() {
   const [asistenciaModalVisible, setAsistenciaModalVisible] = useState(false);
   const [cerrarModalVisible, setCerrarModalVisible] = useState(false);
   const [cerrandoAsamblea, setCerrandoAsamblea] = useState(false);
+  const [codigoModalVisible, setCodigoModalVisible] = useState(false);
 
   const cargarTodo = useCallback(async () => {
     if (!asambleaId) return;
@@ -297,7 +298,21 @@ export default function AdminAsamblea() {
         {/* ACCIONES */}
         <View style={styles.actions}>
           <Action
-            text="📋 Listado de propuestas"
+            text="🧑‍🤝‍🧑 Listado de asistentes"
+            color="#059669"
+            onPress={() =>
+              router.push({ pathname: '/admin/asistentes', params: { asambleaId } })
+            }
+          />
+
+          <Action
+            text="� Mostrar Código"
+            color="#8b5cf6"
+            onPress={() => setCodigoModalVisible(true)}
+          />
+
+          <Action
+            text="�📋 Listado de propuestas"
             color="#2563eb"
             onPress={() =>
               router.push({ pathname: '/admin/propuestas', params: { asambleaId } })
@@ -338,6 +353,33 @@ export default function AdminAsamblea() {
         onClose={() => setAsistenciaModalVisible(false)}
         asambleaId={asambleaId}
       />
+
+      {/* Modal para mostrar código en grande */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={codigoModalVisible}
+        onRequestClose={() => setCodigoModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setCodigoModalVisible(false)}
+        >
+          <Pressable 
+            style={styles.codigoModalContent}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text style={styles.codigoModalTitle}>Código de acceso</Text>
+            <Text style={styles.codigoModalCodigo}>{asamblea.codigo_acceso}</Text>
+            <TouchableOpacity
+              style={styles.codigoModalButton}
+              onPress={() => setCodigoModalVisible(false)}
+            >
+              <Text style={styles.codigoModalButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Modal de confirmación para cerrar asamblea */}
       <Modal
@@ -713,5 +755,48 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+  },
+
+  // Estilos para el modal del código
+  codigoModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 40,
+    width: '100%',
+    maxWidth: 450,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  codigoModalTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  codigoModalCodigo: {
+    fontSize: 72,
+    fontWeight: 'bold',
+    color: '#000000',
+    letterSpacing: 12,
+    marginBottom: 32,
+    textAlign: 'center',
+  },
+  codigoModalButton: {
+    backgroundColor: '#16a34a',
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    minWidth: 150,
+  },
+  codigoModalButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
