@@ -43,7 +43,7 @@ export default function ResidenteScreen() {
 
     const { data, error } = await supabase
       .from('asambleas')
-      .select('id, estado')
+      .select('id, estado, hora_cierre_ingreso')
       .eq('codigo_acceso', codigo)
       .single();
 
@@ -60,6 +60,20 @@ export default function ResidenteScreen() {
         'Esta asamblea no está disponible'
       );
       return;
+    }
+
+    // Verificar si el ingreso está cerrado
+    if (data.hora_cierre_ingreso) {
+      const ahora = new Date();
+      const horaCierre = new Date(data.hora_cierre_ingreso);
+      
+      if (ahora >= horaCierre) {
+        Alert.alert(
+          '⏰ Ingreso cerrado',
+          'El tiempo de ingreso a esta asamblea ha finalizado. No se permiten nuevos registros.'
+        );
+        return;
+      }
     }
 
     setAsambleaId(data.id);
@@ -90,18 +104,62 @@ export default function ResidenteScreen() {
 
     setCargando(true);
 
-    // 1️⃣ obtener vivienda
-    const { data: vivienda } = await supabase
+    console.log('🔍 Buscando vivienda con numero_casa:', numeroCasa);
+
+    // 1️⃣ Obtener vivienda
+    const { data: vivienda, error: errorVivienda } = await supabase
       .from('viviendas')
-      .select('id')
+      .select('id, numero_casa')
       .eq('numero_casa', numeroCasa)
       .single();
 
-    if (!vivienda) {
+    console.log('📦 Resultado consulta vivienda:', { vivienda, errorVivienda });
+
+    if (!vivienda || errorVivienda) {
       setCargando(false);
       Alert.alert(
         'Error',
-        'La vivienda no existe en el sistema'
+        `La vivienda ${numeroCasa} no existe en el sistema`
+      );
+      return;
+    }
+
+    // 2️⃣ Obtener propietario de esa vivienda
+    const { data: propietario, error: errorPropietario } = await supabase
+      .from('propietarios')
+      .select('primer_nombre, primer_apellido')
+      .eq('vivienda_id', vivienda.id)
+      .single();
+
+    console.log('👤 Resultado consulta propietario:', { propietario, errorPropietario });
+
+    if (!propietario || errorPropietario) {
+      setCargando(false);
+      Alert.alert(
+        'Error',
+        `No se encontró el propietario registrado para la casa ${numeroCasa}`
+      );
+      return;
+    }
+
+    // 3️⃣ Validar que nombre y apellido coincidan (case-insensitive)
+    const nombreCoincide = propietario.primer_nombre?.toLowerCase().trim() === nombrePropietario.toLowerCase().trim();
+    const apellidoCoincide = propietario.primer_apellido?.toLowerCase().trim() === apellidoPropietario.toLowerCase().trim();
+
+    console.log('🔒 Validación:', {
+      nombreBD: propietario.primer_nombre,
+      nombreIngresado: nombrePropietario,
+      nombreCoincide,
+      apellidoBD: propietario.primer_apellido,
+      apellidoIngresado: apellidoPropietario,
+      apellidoCoincide
+    });
+
+    if (!nombreCoincide || !apellidoCoincide) {
+      setCargando(false);
+      Alert.alert(
+        '❌ Datos incorrectos',
+        `Verifica los datos e intenta nuevamente.`
       );
       return;
     }

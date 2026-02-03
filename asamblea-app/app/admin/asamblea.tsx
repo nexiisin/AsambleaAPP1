@@ -24,6 +24,8 @@ export default function AdminAsamblea() {
   const [apoderadosPendientes, setApoderadosPendientes] = useState(0);
   const [tiempoRestante, setTiempoRestante] = useState('');
   const [asistenciaModalVisible, setAsistenciaModalVisible] = useState(false);
+  const [cerrarModalVisible, setCerrarModalVisible] = useState(false);
+  const [cerrandoAsamblea, setCerrandoAsamblea] = useState(false);
 
   const cargarTodo = useCallback(async () => {
     if (!asambleaId) return;
@@ -182,6 +184,32 @@ export default function AdminAsamblea() {
     calcularTiempoRestante();
   }, [calcularTiempoRestante]);
 
+  const cerrarAsamblea = async () => {
+    setCerrandoAsamblea(true);
+    try {
+      const { error } = await supabase
+        .from('asambleas')
+        .update({ estado: 'CERRADA' })
+        .eq('id', asambleaId);
+
+      if (error) {
+        Alert.alert('Error', 'No se pudo cerrar la asamblea');
+        console.error('Error al cerrar asamblea:', error);
+        setCerrandoAsamblea(false);
+        return;
+      }
+
+      setCerrarModalVisible(false);
+      Alert.alert('✅ Asamblea cerrada', 'La asamblea se ha cerrado correctamente');
+      cargarTodo();
+      router.back();
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Ocurrió un error al cerrar la asamblea');
+      setCerrandoAsamblea(false);
+    }
+  };
+
   if (!asamblea) {
     return <View style={styles.center}><Text>Cargando…</Text></View>;
   }
@@ -257,18 +285,6 @@ export default function AdminAsamblea() {
         <Text style={styles.btnText}>💬 Iniciar debate</Text>
       </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.grayBtn}
-            onPress={async () => {
-              await supabase.rpc('regresar_a_espera', {
-                p_asamblea_id: asambleaId,
-              });
-              cargarTodo();
-            }}
-          >
-            <Text style={styles.btnText}>⏸️ Regresar a espera</Text>
-          </TouchableOpacity>
-
           {/* Botón Asistencia - abre modal para conteo de registros */}
           <TouchableOpacity
             style={[styles.primaryButton, { marginTop: 12 }]}
@@ -276,20 +292,6 @@ export default function AdminAsamblea() {
           >
             <Text style={styles.primaryButtonText}>🧾 Asistencia</Text>
           </TouchableOpacity>
-
-          {propuestaAbierta && (
-            <TouchableOpacity
-              style={styles.purpleBtn}
-              onPress={async () => {
-                await supabase.rpc('cerrar_votacion', {
-                  p_asamblea_id: asambleaId,
-                });
-                cargarTodo();
-              }}
-            >
-              <Text style={styles.btnText}>📊 Cerrar votación</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* ACCIONES */}
@@ -313,7 +315,7 @@ export default function AdminAsamblea() {
           <Action
             text="📊 Ver resultados"
             color="#10b981"
-            onPress={() => Alert.alert('Resultados', 'Funcionalidad en desarrollo')}
+            onPress={() => router.push({ pathname: '/admin/resultados', params: { asambleaId } })}
           />
 
           <Action
@@ -325,27 +327,7 @@ export default function AdminAsamblea() {
           <Action
             text="🔴 Cerrar asamblea"
             color="#dc2626"
-            onPress={async () => {
-              try {
-                const { error } = await supabase
-                  .from('asambleas')
-                  .update({ estado: 'CERRADA' })
-                  .eq('id', asambleaId);
-
-                if (error) {
-                  Alert.alert('Error', 'No se pudo cerrar la asamblea');
-                  console.error('Error al cerrar asamblea:', error);
-                  return;
-                }
-
-                Alert.alert('Asamblea cerrada', 'La asamblea se ha cerrado correctamente');
-                cargarTodo();
-                router.back();
-              } catch (e) {
-                console.error(e);
-                Alert.alert('Error', 'Ocurrió un error al cerrar la asamblea');
-              }
-            }}
+            onPress={() => setCerrarModalVisible(true)}
           />
         </View>
 
@@ -356,6 +338,65 @@ export default function AdminAsamblea() {
         onClose={() => setAsistenciaModalVisible(false)}
         asambleaId={asambleaId}
       />
+
+      {/* Modal de confirmación para cerrar asamblea */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={cerrarModalVisible}
+        onRequestClose={() => !cerrandoAsamblea && setCerrarModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <View style={styles.confirmModalHeader}>
+              <Text style={styles.confirmModalIcon}>⚠️</Text>
+              <Text style={styles.confirmModalTitle}>¿Cerrar asamblea?</Text>
+            </View>
+            
+            <Text style={styles.confirmModalMessage}>
+              Esta acción cerrará la asamblea de forma permanente. Ya no se podrán realizar votaciones ni registrar nuevos asistentes.
+            </Text>
+
+            <View style={styles.confirmModalStats}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Asistentes registrados</Text>
+                <Text style={styles.statValue}>{totalAsistentes}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Propuestas creadas</Text>
+                <Text style={styles.statValue}>{propuestas.length}</Text>
+              </View>
+            </View>
+
+            <Text style={styles.confirmModalWarning}>
+              ⚠️ Esta acción no se puede deshacer
+            </Text>
+
+            <View style={styles.confirmModalButtons}>
+              <TouchableOpacity
+                style={styles.confirmCancelButton}
+                onPress={() => setCerrarModalVisible(false)}
+                disabled={cerrandoAsamblea}
+              >
+                <Text style={styles.confirmCancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.confirmDeleteButton,
+                  cerrandoAsamblea && styles.confirmDeleteButtonDisabled
+                ]}
+                onPress={cerrarAsamblea}
+                disabled={cerrandoAsamblea}
+              >
+                <Text style={styles.confirmDeleteButtonText}>
+                  {cerrandoAsamblea ? '⏳ Cerrando...' : '🔴 Sí, cerrar'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -510,9 +551,11 @@ const styles = StyleSheet.create({
 
   infoBox: {
     backgroundColor: '#fff',
-    padding: 16,
+    padding: 20,
     borderRadius: 12,
     marginBottom: 16,
+    minHeight: 100,
+    justifyContent: 'center',
   },
   infoTitle: { fontWeight: 'bold', marginBottom: 8 },
   infoText: { fontSize: 16, color: '#16a34a', fontWeight: '600' },
@@ -535,7 +578,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  btnText: { color: '#fff', fontWeight: '600' },
+  btnText: { color: '#fff', fontWeight: '600', textAlign: 'center' },
 
   smallBtn: {
     marginTop: 8,
@@ -560,5 +603,115 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+
+  // Estilos para el modal de confirmación
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  confirmModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 420,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  confirmModalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  confirmModalIcon: {
+    fontSize: 56,
+    marginBottom: 8,
+  },
+  confirmModalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+    textAlign: 'center',
+  },
+  confirmModalMessage: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  confirmModalStats: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  statItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#16a34a',
+  },
+  confirmModalWarning: {
+    fontSize: 14,
+    color: '#dc2626',
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 24,
+  },
+  confirmModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  confirmCancelButton: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+  },
+  confirmCancelButtonText: {
+    color: '#4b5563',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmDeleteButton: {
+    flex: 1,
+    backgroundColor: '#dc2626',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  confirmDeleteButtonDisabled: {
+    backgroundColor: '#fca5a5',
+    opacity: 0.7,
+  },
+  confirmDeleteButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

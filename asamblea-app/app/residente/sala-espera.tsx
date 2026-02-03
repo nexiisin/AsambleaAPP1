@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,10 +19,11 @@ const CIRCLE_SIZE = Math.min(width * 0.5, 180);
 const STROKE_WIDTH = 6;
 
 export default function SalaEspera() {
-  const { asambleaId, asistenciaId, numeroCasa } = useLocalSearchParams<{
+  const { asambleaId, asistenciaId, numeroCasa, fromResults } = useLocalSearchParams<{
     asambleaId: string;
     asistenciaId: string;
     numeroCasa: string;
+    fromResults?: string;
   }>();
 
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -36,6 +37,9 @@ export default function SalaEspera() {
   const [segundosRestantes, setSegundosRestantes] = useState(0);
   const [asamblea, setAsamblea] = useState<any>(null);
   const [hayPropuestaActiva, setHayPropuestaActiva] = useState(false);
+  
+  // Ref para evitar redirecciones infinitas
+  const lastPropuestaResultadosId = useRef<string | null>(null);
 
   useEffect(() => {
     // Animación de entrada
@@ -66,9 +70,52 @@ export default function SalaEspera() {
 
       if (!asambleaData) return;
 
+      console.log('🔄 (Sala espera) Estado asamblea:', {
+        propuesta_activa_id: asambleaData.propuesta_activa_id,
+        propuesta_resultados_id: asambleaData.propuesta_resultados_id,
+        estado_actual: asambleaData.estado_actual
+      });
+
       setAsamblea(asambleaData);
-      // Indicar que hay una propuesta activa pero NO redirigir automáticamente
-      setHayPropuestaActiva(!!asambleaData.propuesta_activa_id);
+      
+      // Redirigir automáticamente si hay propuesta activa (votación)
+      if (asambleaData.propuesta_activa_id) {
+        console.log('➡️ Redirigiendo a votación');
+        router.replace({
+          pathname: '/residente/votacion',
+          params: { asambleaId, asistenciaId },
+        });
+        return;
+      }
+      
+      // Redirigir automáticamente si hay resultados publicados
+      // EXCEPTO si el usuario viene intencionalmente desde la pantalla de resultados
+      if (asambleaData.propuesta_resultados_id && !fromResults) {
+        if (lastPropuestaResultadosId.current !== asambleaData.propuesta_resultados_id) {
+          console.log('➡️ Redirigiendo a resultados (NUEVO), propuestaId:', asambleaData.propuesta_resultados_id);
+          lastPropuestaResultadosId.current = asambleaData.propuesta_resultados_id;
+          router.replace({
+            pathname: '/residente/resultados',
+            params: { 
+              asambleaId, 
+              asistenciaId,
+              propuestaId: asambleaData.propuesta_resultados_id 
+            },
+          });
+          return;
+        } else {
+          console.log('⏸️ Ya se mostró esta propuesta de resultados, no redirigir');
+        }
+      } else if (fromResults) {
+        console.log('🔙 Usuario regresó intencionalmente desde resultados, no redirigir');
+        // Resetear el parámetro para que no afecte navegaciones futuras
+        router.setParams({ fromResults: undefined });
+      } else if (!asambleaData.propuesta_resultados_id) {
+        // Si se limpia propuesta_resultados_id, resetear el ref
+        lastPropuestaResultadosId.current = null;
+      }
+      
+      setHayPropuestaActiva(false);
 
       // Verificar si el cronómetro está activo
       if (asambleaData.cronometro_activo) {
@@ -128,11 +175,14 @@ export default function SalaEspera() {
           table: 'asambleas',
           filter: `id=eq.${asambleaId}`,
         },
-        () => {
+        (payload) => {
+          console.log('🔔 Cambio detectado en asamblea:', payload);
           verificarEstado();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Estado suscripción sala-espera:', status);
+      });
 
     // Suscripción broadcast para acciones del admin (ej. redirigir a formulario de asistencia)
     const broadcastChannel = supabase
@@ -231,18 +281,6 @@ export default function SalaEspera() {
               )}
             </View>
           </>
-        )}
-
-        {/* Si hay propuesta activa, mostrar botón para ir a votar (manual) */}
-        {hayPropuestaActiva && (
-          <View style={{ marginBottom: 12, width: '100%', alignItems: 'center' }}>
-            <TouchableOpacity
-              style={styles.voteNowButton}
-              onPress={() => router.push({ pathname: '/residente/votacion', params: { asambleaId, asistenciaId, numeroCasa } })}
-            >
-              <Text style={styles.voteNowText}>Ir a votar</Text>
-            </TouchableOpacity>
-          </View>
         )}
 
         {/* Indicador de conexión */}
