@@ -295,14 +295,6 @@ export default function AdminAsamblea() {
         {/* ACCIONES */}
         <View style={styles.actions}>
           <Action
-            text="➕ Crear propuesta"
-            color="#16a34a"
-            onPress={() =>
-              router.push({ pathname: '/admin/propuestas', params: { asambleaId } })
-            }
-          />
-
-          <Action
             text="📋 Listado de propuestas"
             color="#2563eb"
             onPress={() =>

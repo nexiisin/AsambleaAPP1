@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
@@ -34,6 +35,7 @@ export default function SalaEspera() {
   const [cronometroPausado, setCronometroPausado] = useState(false);
   const [segundosRestantes, setSegundosRestantes] = useState(0);
   const [asamblea, setAsamblea] = useState<any>(null);
+  const [hayPropuestaActiva, setHayPropuestaActiva] = useState(false);
 
   useEffect(() => {
     // Animación de entrada
@@ -63,8 +65,10 @@ export default function SalaEspera() {
         .single();
 
       if (!asambleaData) return;
-      
+
       setAsamblea(asambleaData);
+      // Indicar que hay una propuesta activa pero NO redirigir automáticamente
+      setHayPropuestaActiva(!!asambleaData.propuesta_activa_id);
 
       // Verificar si el cronómetro está activo
       if (asambleaData.cronometro_activo) {
@@ -229,6 +233,18 @@ export default function SalaEspera() {
           </>
         )}
 
+        {/* Si hay propuesta activa, mostrar botón para ir a votar (manual) */}
+        {hayPropuestaActiva && (
+          <View style={{ marginBottom: 12, width: '100%', alignItems: 'center' }}>
+            <TouchableOpacity
+              style={styles.voteNowButton}
+              onPress={() => router.push({ pathname: '/residente/votacion', params: { asambleaId, asistenciaId, numeroCasa } })}
+            >
+              <Text style={styles.voteNowText}>Ir a votar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Indicador de conexión */}
         <View style={styles.statusContainer}>
           <View style={styles.statusDot} />
@@ -353,6 +369,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#16a34a',
     fontFamily: 'monospace',
+  },
+
+  voteNowButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    width: '80%'
+  },
+  voteNowText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700'
   },
 
   statusContainer: {
