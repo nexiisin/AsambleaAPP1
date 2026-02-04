@@ -5,7 +5,7 @@ const FORMULARIOS = {
   documento: 'https://docs.google.com/forms/d/e/1FAIpQLScGGDYB2ccY6trDeM8G7R_oG-dIIIoz3d8igCHfjYKnUE5G6w/viewform?usp=header',
   quejasSugerencias: 'https://docs.google.com/forms/d/e/1FAIpQLSdV2e3Ieoc_fqbUNqQhDgAhHoLcANen-goSK9VqW0OSie0o1A/viewform?usp=header',
   novedad: 'https://docs.google.com/forms/d/e/1FAIpQLSfRJpzFqvdj45Knjr5DfD7AJCzER7NKnAr8uN5jP_XH7z3EWw/viewform?usp=publish-editor',
-  otra: '',
+  otra: 'https://docs.google.com/forms/d/e/1FAIpQLSc2PLHA1u20wOlKdKvsR7yYuq47gZFkMxYjQoP2a9JPOqRkkg/viewform',
 };
 
 const BOTONES = [
