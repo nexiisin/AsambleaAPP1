@@ -22,6 +22,9 @@ export default function AdminAsamblea() {
   const [propuestas, setPropuestas] = useState<any[]>([]);
   const [propuestaAbierta, setPropuestaAbierta] = useState<any>(null);
   const [totalAsistentes, setTotalAsistentes] = useState(0);
+  const [totalViviendas, setTotalViviendas] = useState<number | null>(null);
+  const [porcentajeQuorum, setPorcentajeQuorum] = useState(0);
+  const [quorumCumplido, setQuorumCumplido] = useState(false);
   const [apoderadosPendientes, setApoderadosPendientes] = useState(0);
   const [tiempoRestante, setTiempoRestante] = useState('');
   const [asistenciaModalVisible, setAsistenciaModalVisible] = useState(false);
@@ -65,8 +68,23 @@ export default function AdminAsamblea() {
       }
     });
 
+    let totalVivs = a?.total_viviendas ?? null;
+    if (!totalVivs) {
+      const { count: viviendasCount } = await supabase
+        .from('viviendas')
+        .select('*', { count: 'exact', head: true });
+      totalVivs = viviendasCount || null;
+    }
+
+    const pct = totalVivs ? Math.round((total / totalVivs) * 100) : 0;
+    const minimoViviendas = totalVivs ? Math.floor(totalVivs / 2) + 1 : 0;
+    const cumple = total >= minimoViviendas;
+
+    setTotalViviendas(totalVivs);
     setTotalAsistentes(total);
     setApoderadosPendientes(pendientes);
+    setPorcentajeQuorum(pct);
+    setQuorumCumplido(cumple);
   }, [asambleaId]);
 
   const calcularTiempoRestante = useCallback(() => {
@@ -186,26 +204,6 @@ export default function AdminAsamblea() {
     calcularTiempoRestante();
   }, [calcularTiempoRestante]);
 
-  const volverASalaEspera = async () => {
-    try {
-      // Limpiar propuesta activa y resultados para redirigir a todos a sala de espera
-      await supabase
-        .from('asambleas')
-        .update({
-          propuesta_activa_id: null,
-          propuesta_resultados_id: null,
-          estado_actual: 'ESPERA'
-        })
-        .eq('id', asambleaId);
-
-      Alert.alert('✅ Hecho', 'Todos los residentes han vuelto a la sala de espera');
-      cargarTodo();
-    } catch (e) {
-      console.error('Error al volver a sala de espera:', e);
-      Alert.alert('Error', 'Ocurrió un error');
-    }
-  };
-
   const cerrarAsamblea = async () => {
     setCerrandoAsamblea(true);
     try {
@@ -296,7 +294,8 @@ export default function AdminAsamblea() {
           </Text>
 
       <TouchableOpacity
-        style={styles.orangeBtn}
+        style={[styles.orangeBtn, !quorumCumplido && styles.disabledBtn]}
+        disabled={!quorumCumplido}
         onPress={() =>
           router.push({
             pathname: '/admin/cronometro',
@@ -306,6 +305,12 @@ export default function AdminAsamblea() {
       >
         <Text style={styles.btnText}>💬 Iniciar debate</Text>
       </TouchableOpacity>
+
+      {!quorumCumplido && (
+        <Text style={styles.quorumWarning}>
+          Se requiere mínimo 50% + 1 vivienda ({totalViviendas ? Math.floor(totalViviendas / 2) + 1 : '?'} viviendas) para iniciar.
+        </Text>
+      )}
 
           {/* Botón Asistencia - abre modal para conteo de registros */}
           <TouchableOpacity
@@ -368,12 +373,6 @@ export default function AdminAsamblea() {
                 Alert.alert('❌ Error', error.message || 'No se pudo descargar el acta');
               }
             }}
-          />
-
-          <Action
-            text="↩️ Volver a sala de espera"
-            color="#f59e0b"
-            onPress={volverASalaEspera}
           />
 
           <Action
@@ -672,6 +671,14 @@ const styles = StyleSheet.create({
   redBtn: { backgroundColor: '#ef4444', padding: 14, borderRadius: 10, marginTop: 8 },
   grayBtn: { backgroundColor: '#64748b', padding: 14, borderRadius: 10, marginTop: 8 },
   purpleBtn: { backgroundColor: '#8b5cf6', padding: 14, borderRadius: 10, marginTop: 8 },
+  disabledBtn: { opacity: 0.6 },
+  quorumWarning: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#b45309',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
   primaryButton: {
     backgroundColor: '#16a34a',
     paddingVertical: 14,

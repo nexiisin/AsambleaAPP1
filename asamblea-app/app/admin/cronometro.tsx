@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Dimensions,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -25,6 +26,10 @@ export default function Cronometro() {
   const [minutos, setMinutos] = useState(10);
   const [tiempoRestante, setTiempoRestante] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [totalViviendas, setTotalViviendas] = useState<number | null>(null);
+  const [viviendasRepresentadas, setViviendasRepresentadas] = useState(0);
+  const [porcentajeQuorum, setPorcentajeQuorum] = useState(0);
+  const [quorumCumplido, setQuorumCumplido] = useState(false);
 
   /* =======================
      CARGA + REALTIME
@@ -61,6 +66,67 @@ export default function Cronometro() {
           setAsamblea(payload.new);
           actualizarTiempo(payload.new);
         }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [asambleaId]);
+
+  /* =======================
+     QUÓRUM
+  ======================= */
+  useEffect(() => {
+    if (!asambleaId) return;
+
+    const cargarQuorum = async () => {
+      const { data: a } = await supabase
+        .from('asambleas')
+        .select('total_viviendas')
+        .eq('id', asambleaId)
+        .single();
+
+      let totalVivs = a?.total_viviendas ?? null;
+      if (!totalVivs) {
+        const { count: viviendasCount } = await supabase
+          .from('viviendas')
+          .select('*', { count: 'exact', head: true });
+        totalVivs = viviendasCount || null;
+      }
+
+      const { data: asistenciasData } = await supabase
+        .from('asistencias')
+        .select('vivienda_id, es_apoderado, estado_apoderado, casa_representada')
+        .eq('asamblea_id', asambleaId);
+
+      const setViviendas = new Set<string>();
+      asistenciasData?.forEach((asistencia) => {
+        setViviendas.add(asistencia.vivienda_id);
+        if (asistencia.es_apoderado && asistencia.estado_apoderado === 'APROBADO' && asistencia.casa_representada) {
+          setViviendas.add(asistencia.casa_representada);
+        }
+      });
+
+      const representadas = setViviendas.size;
+      const pct = totalVivs ? Math.round((representadas / totalVivs) * 100) : 0;
+      const minimoViviendas = totalVivs ? Math.floor(totalVivs / 2) + 1 : 0;
+      const cumple = representadas >= minimoViviendas;
+
+      setTotalViviendas(totalVivs);
+      setViviendasRepresentadas(representadas);
+      setPorcentajeQuorum(pct);
+      setQuorumCumplido(cumple);
+    };
+
+    cargarQuorum();
+
+    const channel = supabase
+      .channel(`asistencias-quorum-crono-${asambleaId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
+        () => cargarQuorum()
       )
       .subscribe();
 
@@ -116,6 +182,15 @@ export default function Cronometro() {
      ACCIONES
   ======================= */
   const iniciarCronometro = async () => {
+    if (!quorumCumplido) {
+      const minimo = totalViviendas ? Math.floor(totalViviendas / 2) + 1 : 0;
+      Alert.alert(
+        'Quórum insuficiente',
+        `No se puede iniciar el debate. Se requiere mínimo 50% + 1 vivienda (${minimo} viviendas).`
+      );
+      return;
+    }
+
     await supabase.rpc('iniciar_cronometro_debate', {
       p_asamblea_id: asambleaId,
       p_duracion_segundos: minutos * 60,
@@ -236,9 +311,19 @@ export default function Cronometro() {
             </TouchableOpacity>
           </View>
 
+          <View style={styles.quorumBox}>
+            <Text style={styles.quorumText}>Quórum: {porcentajeQuorum}%</Text>
+            <Text style={styles.quorumSubtext}>
+              {quorumCumplido 
+                ? '✅ Mínimo alcanzado' 
+                : `Se requiere mínimo 50% + 1 (${totalViviendas ? Math.floor(totalViviendas / 2) + 1 : '?'} viviendas)`}
+            </Text>
+          </View>
+
           <TouchableOpacity
-            style={styles.primaryButton}
+            style={[styles.primaryButton, !quorumCumplido && styles.disabledButton]}
             onPress={iniciarCronometro}
+            disabled={!quorumCumplido}
           >
             <Text style={styles.buttonText}>▶ Iniciar</Text>
           </TouchableOpacity>
@@ -370,6 +455,27 @@ const styles = StyleSheet.create({
     width: BUTTON_WIDTH,
     alignItems: 'center',
     marginBottom: 12,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  quorumBox: {
+    width: BUTTON_WIDTH,
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  quorumText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#065f46',
+  },
+  quorumSubtext: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
   },
   pauseButton: {
     backgroundColor: '#f59e0b',

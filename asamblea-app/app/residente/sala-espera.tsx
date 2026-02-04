@@ -30,14 +30,18 @@ export default function SalaEspera() {
   const [scaleAnim] = useState(new Animated.Value(0.8));
   const [tiempoRestante, setTiempoRestante] = useState('');
   const [ingresoCerrado, setIngresoCerrado] = useState(false);
-  
+
+  // Estados del quórum
+  const [totalViviendas, setTotalViviendas] = useState<number | null>(null);
+  const [viviendasRepresentadas, setViviendasRepresentadas] = useState(0);
+
   // Estados del cronómetro
   const [cronometroActivo, setCronometroActivo] = useState(false);
   const [cronometroPausado, setCronometroPausado] = useState(false);
   const [segundosRestantes, setSegundosRestantes] = useState(0);
   const [asamblea, setAsamblea] = useState<any>(null);
   const [hayPropuestaActiva, setHayPropuestaActiva] = useState(false);
-  
+
   // Ref para evitar redirecciones infinitas
   const lastPropuestaResultadosId = useRef<string | null>(null);
   const fromResultsProcessed = useRef(false);
@@ -207,6 +211,61 @@ export default function SalaEspera() {
     };
   }, [asambleaId]);
 
+  useEffect(() => {
+    if (!asambleaId) return;
+
+    const cargarQuorum = async () => {
+      const { data: a } = await supabase
+        .from('asambleas')
+        .select('total_viviendas')
+        .eq('id', asambleaId)
+        .single();
+
+      if (a?.total_viviendas) {
+        setTotalViviendas(a.total_viviendas);
+      } else {
+        const { count: viviendasCount } = await supabase
+          .from('viviendas')
+          .select('*', { count: 'exact', head: true });
+        setTotalViviendas(viviendasCount || null);
+      }
+
+      const { data: asistenciasData } = await supabase
+        .from('asistencias')
+        .select('vivienda_id, es_apoderado, estado_apoderado, casa_representada')
+        .eq('asamblea_id', asambleaId);
+
+      const setViviendas = new Set<string>();
+      asistenciasData?.forEach((asistencia) => {
+        setViviendas.add(asistencia.vivienda_id);
+        if (asistencia.es_apoderado && asistencia.estado_apoderado === 'APROBADO' && asistencia.casa_representada) {
+          setViviendas.add(asistencia.casa_representada);
+        }
+      });
+
+      setViviendasRepresentadas(setViviendas.size);
+    };
+
+    cargarQuorum();
+
+    const channel = supabase
+      .channel(`asistencias-quorum-${asambleaId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
+        () => cargarQuorum()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [asambleaId]);
+
+  const porcentajeQuorum = totalViviendas ? Math.round((viviendasRepresentadas / totalViviendas) * 100) : 0;
+  const minimoViviendas = totalViviendas ? Math.floor(totalViviendas / 2) + 1 : 0;
+  const quorumCumplido = viviendasRepresentadas >= minimoViviendas;
+
   return (
     <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.container}>
       <Animated.View
@@ -275,6 +334,24 @@ export default function SalaEspera() {
                   ? 'Esperando tiempo de debate, propuesta o resultado'
                   : 'Estás en la sala de espera. El proceso de registro permanecerá abierto hasta que el administrador inicie la asamblea.'}
               </Text>
+
+              <View style={styles.quorumContainer}>
+                <Text style={styles.quorumLabel}>Quórum: {porcentajeQuorum}%</Text>
+                <View style={styles.quorumBar}>
+                  <View
+                    style={[
+                      styles.quorumFill,
+                      { width: `${Math.min(100, porcentajeQuorum)}%` },
+                      quorumCumplido ? styles.quorumFillOk : styles.quorumFillPending,
+                    ]}
+                  />
+                </View>
+                <Text style={styles.quorumHint}>
+                  {quorumCumplido
+                    ? '✅ Quórum alcanzado (mínimo 50% + 1 vivienda)'
+                    : `Se requiere mínimo 50% + 1 (${minimoViviendas} viviendas)`}
+                </Text>
+              </View>
               
               {tiempoRestante && !ingresoCerrado && (
                 <View style={styles.timerContainer}>
@@ -410,6 +487,43 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#16a34a',
     fontFamily: 'monospace',
+  },
+
+  quorumContainer: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#d1d5db',
+    alignItems: 'center',
+  },
+  quorumLabel: {
+    fontSize: 14,
+    color: '#065f46',
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  quorumBar: {
+    width: '100%',
+    height: 12,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  quorumFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  quorumFillOk: {
+    backgroundColor: '#22c55e',
+  },
+  quorumFillPending: {
+    backgroundColor: '#f59e0b',
+  },
+  quorumHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#4b5563',
+    textAlign: 'center',
   },
 
   voteNowButton: {

@@ -1,14 +1,30 @@
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const FORM_URL = 'https://forms.gle/TU_FORM_AQUI';
+const FORMULARIOS = {
+  documento: 'https://docs.google.com/forms/d/e/1FAIpQLScGGDYB2ccY6trDeM8G7R_oG-dIIIoz3d8igCHfjYKnUE5G6w/viewform?usp=header',
+  quejasSugerencias: 'https://docs.google.com/forms/d/e/1FAIpQLSdV2e3Ieoc_fqbUNqQhDgAhHoLcANen-goSK9VqW0OSie0o1A/viewform?usp=header',
+  novedad: 'https://docs.google.com/forms/d/e/1FAIpQLSfRJpzFqvdj45Knjr5DfD7AJCzER7NKnAr8uN5jP_XH7z3EWw/viewform?usp=publish-editor',
+  otra: '',
+};
+
+const BOTONES = [
+  { texto: '🧾 Solicitar un documento', key: 'documento' },
+  { texto: '💡 Sugerencia/Queja/Felicitacion', key: 'quejasSugerencias' },
+  { texto: '🛠 Reportar una novedad', key: 'novedad' },
+  { texto: '❓ Otra solicitud', key: 'otra' },
+];
 
 export default function PQRS() {
-  const openForm = () => {
-    Linking.openURL(FORM_URL);
+  const abrirFormulario = (key: string) => {
+    const url = FORMULARIOS[key as keyof typeof FORMULARIOS];
+    if (url) {
+      Linking.openURL(url);
+    }
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>Solicitudes y PQRS</Text>
 
@@ -16,29 +32,23 @@ export default function PQRS() {
           Selecciona el tipo de solicitud
         </Text>
 
-        {[
-          '🧾 Solicitar un documento',
-          '⚠️ Registrar una queja',
-          '💡 Enviar una sugerencia',
-          '🛠 Reportar una novedad',
-          '❓ Otra solicitud',
-        ].map((text) => (
+        {BOTONES.map((boton) => (
           <TouchableOpacity
-            key={text}
+            key={boton.key}
             style={styles.button}
-            onPress={openForm}
+            onPress={() => abrirFormulario(boton.key)}
           >
-            <Text style={styles.buttonText}>{text}</Text>
+            <Text style={styles.buttonText}>{boton.texto}</Text>
           </TouchableOpacity>
         ))}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -46,7 +56,7 @@ const styles = StyleSheet.create({
 
   card: {
     width: '100%',
-    maxWidth: 420, // 🔥 MISMO TAMAÑO QUE HOME
+    maxWidth: 420,
     alignItems: 'center',
   },
 

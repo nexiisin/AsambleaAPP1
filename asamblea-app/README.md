@@ -20,11 +20,11 @@ faltantes
 
 
 
-acata de asamblea, esta acta, es un resumen general de la asamblea, osea, todas las presonas que entraron, todas las personas que se quedaron hasta el final (los apoderados cuentan como dos que salgan en una aparte que diga apoderados), y tambien un apartado de preguntas, en el apartado de las preguntas saldra, titulo de la propuesta, la descipcion de la propuesta, los graficos, las estadisticas, etc, todo esto se descargara en un pdf cuando le de click al boton de descargar acta, este boton esta en el archivo asamblea.tsx (trabajando casi terminado)
+acata de asamblea, esta acta, es un resumen general de la asamblea, osea, todas las presonas que entraron, todas las personas que se quedaron hasta el final (los apoderados cuentan como dos que salgan en una aparte que diga apoderados), y tambien un apartado de preguntas, en el apartado de las preguntas saldra, titulo de la propuesta, la descipcion de la propuesta, los graficos, las estadisticas, etc, todo esto se descargara en un pdf cuando le de click al boton de descargar acta, este boton esta en el archivo asamblea.tsx (listo)
 
-el QUORUM eso significa que en la sala de espera tiene que tener una barra de procentaje que se actualice cada que las casas se registran, no se puede iniciar con la asamblea hasta que el 70% de las casas esten dentro
+el QUORUM eso significa que en la sala de espera tiene que tener una barra de procentaje que se actualice cada que las casas se registran, no se puede iniciar con la asamblea hasta que el 50% + 1 de las casas esten dentro (listo)
 
-los  google froms  (trabajndo casi terminadi para integrar los viculos)
+los  google froms  (faltan dos vinculos)
 
 
 cambiar logo de ventana de google y tambien, cambiar el nombre de la pagina a altos del guali
