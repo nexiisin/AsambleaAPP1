@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { descargarActaAsamblea } from '@/src/services/pdf-acta';
 
 export default function AdminAsamblea() {
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
@@ -356,7 +357,17 @@ export default function AdminAsamblea() {
           <Action
             text="📥 Descargar acta"
             color="#6366f1"
-            onPress={() => Alert.alert('PDF', 'Aquí va el PDF')}
+            onPress={async () => {
+              try {
+                Alert.alert('Generando acta', 'Por favor espera...');
+                if (asambleaId) {
+                  await descargarActaAsamblea(asambleaId);
+                  Alert.alert('✓ Éxito', 'El acta se ha descargado correctamente');
+                }
+              } catch (error: any) {
+                Alert.alert('❌ Error', error.message || 'No se pudo descargar el acta');
+              }
+            }}
           />
 
           <Action
