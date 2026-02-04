@@ -30,4 +30,6 @@ faltantes
 
 Certificado de asistencia de asamblea.
 
+
+
 cambiar logo de ventana de google y tambien, cambiar el nombre de la pagina a altos del guali
