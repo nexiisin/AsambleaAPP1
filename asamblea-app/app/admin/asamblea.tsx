@@ -16,9 +16,20 @@ import { supabase } from '@/src/services/supabase';
 import { descargarActaAsamblea } from '@/src/services/pdf-acta';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 import { useResponsive } from '@/src/hooks/useResponsive';
+import { useFontSize } from '@/src/hooks/useFontSize';
 
 export default function AdminAsamblea() {
   const { isDesktop } = useResponsive();
+  
+  // Obtener getFontSize con manejo seguro de contexto
+  let getFontSize = (size: number) => size;
+  try {
+    const fontSizeContext = useFontSize();
+    getFontSize = fontSizeContext.getFontSize;
+  } catch (e) {
+    // Si el contexto no está disponible, usar tamaños base
+  }
+  
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
 
   const [asamblea, setAsamblea] = useState<any>(null);
@@ -230,9 +241,12 @@ export default function AdminAsamblea() {
       }
 
       setCerrarModalVisible(false);
-      Alert.alert('✅ Asamblea cerrada', 'La asamblea se ha cerrado correctamente');
-      cargarTodo();
-      router.replace({ pathname: '/admin/asambleas' });
+      Alert.alert('✅ Asamblea cerrada', 'La asamblea se ha cerrado correctamente', [
+        {
+          text: 'Aceptar',
+          onPress: () => router.replace({ pathname: '/admin' })
+        }
+      ]);
     } catch (e) {
       console.error(e);
       Alert.alert('Error', 'Ocurrió un error al cerrar la asamblea');
@@ -240,10 +254,46 @@ export default function AdminAsamblea() {
     }
   };
 
+  // Crear estilos dinámicos basados en el tamaño de letra seleccionado
+  const getDynamicStyles = () => ({
+    headerLabel: { fontSize: getFontSize(14) },
+    codigo: { fontSize: getFontSize(48) },
+    codigoDesktop: { fontSize: getFontSize(56) },
+    estadoBadgeText: { fontSize: getFontSize(14) },
+    estadoBadgeTextDesktop: { fontSize: getFontSize(18) },
+    systemStatusIcon: { fontSize: getFontSize(24) },
+    systemStatusTitle: { fontSize: getFontSize(14) },
+    systemStatusValue: { fontSize: getFontSize(20) },
+    systemStatusValueDesktop: { fontSize: getFontSize(24) },
+    closeNowBtnText: { fontSize: getFontSize(14) },
+    statIcon: { fontSize: getFontSize(32) },
+    statIconDesktop: { fontSize: getFontSize(36) },
+    statNumber: { fontSize: getFontSize(40) },
+    statNumberDesktop: { fontSize: getFontSize(44) },
+    statLabel: { fontSize: getFontSize(14) },
+    statLabelDesktop: { fontSize: getFontSize(18) },
+    statusTitle: { fontSize: getFontSize(16) },
+    statusTitleDesktop: { fontSize: getFontSize(20) },
+    statusValue: { fontSize: getFontSize(24) },
+    statusValueDesktop: { fontSize: getFontSize(24) },
+    quorumAlertIcon: { fontSize: getFontSize(24) },
+    quorumAlertText: { fontSize: getFontSize(14) },
+    debateBtnText: { fontSize: getFontSize(18) },
+    debateBtnTextDesktop: { fontSize: getFontSize(22) },
+    consoleTitle: { fontSize: getFontSize(18) },
+    consoleTitleDesktop: { fontSize: getFontSize(22) },
+    actionCardText: { fontSize: getFontSize(14) },
+    actionCardTextDesktop: { fontSize: getFontSize(16) },
+    closeAssemblyBtnText: { fontSize: getFontSize(16) },
+    closeAssemblyBtnTextDesktop: { fontSize: getFontSize(22) },
+    closeNowBtn: { fontSize: getFontSize(14) },
+  });
+
   if (!asamblea) {
     return <View style={styles.center}><Text>Cargando…</Text></View>;
   }
 
+  const dynamicStyles = getDynamicStyles();
   const estadoVisual = asamblea.estado || asamblea.estado_actual || 'ESPERA';
   const estadoColor = estadoVisual === 'CERRADA' ? '#dc2626' : '#16a34a';
 
@@ -259,24 +309,24 @@ export default function AdminAsamblea() {
 
         {/* HEADER CON CÓDIGO */}
         <View style={[styles.headerCard, isDesktop && styles.headerCardDesktop]}>
-          <Text style={styles.headerLabel}>Código de acceso</Text>
-          <Text style={[styles.codigo, isDesktop && styles.codigoDesktop]}>{asamblea.codigo_acceso}</Text>
+          <Text style={[styles.headerLabel, dynamicStyles.headerLabel]}>Código de acceso</Text>
+          <Text style={[styles.codigo, isDesktop && styles.codigoDesktop, dynamicStyles.codigo, isDesktop && dynamicStyles.codigoDesktop]}>{asamblea.codigo_acceso}</Text>
           <View style={[
             styles.estadoBadge, 
             asamblea.estado === 'CERRADA' && styles.estadoBadgeClosed,
             isDesktop && styles.estadoBadgeDesktop
           ]}>
-            <Text style={[styles.estadoBadgeText, isDesktop && styles.estadoBadgeTextDesktop]}>{asamblea.estado}</Text>
+            <Text style={[styles.estadoBadgeText, isDesktop && styles.estadoBadgeTextDesktop, dynamicStyles.estadoBadgeText, isDesktop && dynamicStyles.estadoBadgeTextDesktop]}>{asamblea.estado}</Text>
           </View>
         </View>
 
         {/* ESTADO DEL SISTEMA */}
         <View style={[styles.systemStatusCard, isDesktop && styles.systemStatusCardDesktop]}>
           <View style={styles.systemStatusHeader}>
-            <Text style={styles.systemStatusIcon}>⏱️</Text>
-            <Text style={styles.systemStatusTitle}>TIEMPO DE INGRESO</Text>
+            <Text style={[styles.systemStatusIcon, dynamicStyles.systemStatusIcon]}>⏱️</Text>
+            <Text style={[styles.systemStatusTitle, dynamicStyles.systemStatusTitle]}>TIEMPO DE INGRESO</Text>
           </View>
-          <Text style={[styles.systemStatusValue, isDesktop && styles.systemStatusValueDesktop]}>
+          <Text style={[styles.systemStatusValue, isDesktop && styles.systemStatusValueDesktop, dynamicStyles.systemStatusValue, isDesktop && dynamicStyles.systemStatusValueDesktop]}>
             {!asamblea.hora_cierre_ingreso 
               ? 'ABIERTO' 
               : tiempoRestante || 'Calculando...'}
@@ -291,7 +341,7 @@ export default function AdminAsamblea() {
                   .eq('id', asambleaId);
               }}
             >
-              <Text style={styles.closeNowBtnText}>Cerrar ingreso ahora</Text>
+              <Text style={[styles.closeNowBtnText, dynamicStyles.closeNowBtnText]}>Cerrar ingreso ahora</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -299,21 +349,21 @@ export default function AdminAsamblea() {
         {/* ESTADÍSTICAS EN CARDS */}
         <View style={[styles.statsGrid, isDesktop && styles.statsGridDesktop]}>
           <View style={[styles.statCard, isDesktop && styles.statCardDesktop]}>
-            <Text style={[styles.statIcon, isDesktop && styles.statIconDesktop]}>👥</Text>
-            <Text style={[styles.statNumber, isDesktop && styles.statNumberDesktop]}>{totalAsistentes}</Text>
-            <Text style={[styles.statLabel, isDesktop && styles.statLabelDesktop]}>Asistentes</Text>
+            <Text style={[styles.statIcon, isDesktop && styles.statIconDesktop, dynamicStyles.statIcon, isDesktop && dynamicStyles.statIconDesktop]}>👥</Text>
+            <Text style={[styles.statNumber, isDesktop && styles.statNumberDesktop, dynamicStyles.statNumber, isDesktop && dynamicStyles.statNumberDesktop]}>{totalAsistentes}</Text>
+            <Text style={[styles.statLabel, isDesktop && styles.statLabelDesktop, dynamicStyles.statLabel, isDesktop && dynamicStyles.statLabelDesktop]}>Asistentes</Text>
           </View>
           <View style={[styles.statCard, isDesktop && styles.statCardDesktop]}>
-            <Text style={[styles.statIcon, isDesktop && styles.statIconDesktop]}>💡</Text>
-            <Text style={[styles.statNumber, isDesktop && styles.statNumberDesktop]}>{propuestas.length}</Text>
-            <Text style={[styles.statLabel, isDesktop && styles.statLabelDesktop]}>Propuestas</Text>
+            <Text style={[styles.statIcon, isDesktop && styles.statIconDesktop, dynamicStyles.statIcon, isDesktop && dynamicStyles.statIconDesktop]}>💡</Text>
+            <Text style={[styles.statNumber, isDesktop && styles.statNumberDesktop, dynamicStyles.statNumber, isDesktop && dynamicStyles.statNumberDesktop]}>{propuestas.length}</Text>
+            <Text style={[styles.statLabel, isDesktop && styles.statLabelDesktop, dynamicStyles.statLabel, isDesktop && dynamicStyles.statLabelDesktop]}>Propuestas</Text>
           </View>
         </View>
 
         {/* ESTADO Y QUORUM */}
         <View style={[styles.statusCard, isDesktop && styles.statusCardDesktop]}>
-          <Text style={[styles.statusTitle, isDesktop && styles.statusTitleDesktop]}>📊 Estado de la asamblea</Text>
-          <Text style={[styles.statusValue, isDesktop && styles.statusValueDesktop, { color: estadoColor }]}>{estadoVisual}</Text>
+          <Text style={[styles.statusTitle, isDesktop && styles.statusTitleDesktop, dynamicStyles.statusTitle, isDesktop && dynamicStyles.statusTitleDesktop]}>📊 Estado de la asamblea</Text>
+          <Text style={[styles.statusValue, isDesktop && styles.statusValueDesktop, dynamicStyles.statusValue, isDesktop && dynamicStyles.statusValueDesktop, { color: estadoColor }]}>{estadoVisual}</Text>
           
           {!quorumCumplido && (
             <View style={styles.quorumAlert}>
@@ -340,12 +390,12 @@ export default function AdminAsamblea() {
             })
           }
         >
-          <Text style={[styles.debateBtnText, isDesktop && styles.debateBtnTextDesktop]}>💬 Iniciar debate</Text>
+          <Text style={[styles.debateBtnText, isDesktop && styles.debateBtnTextDesktop, dynamicStyles.debateBtnText, isDesktop && dynamicStyles.debateBtnTextDesktop]}>💬 Iniciar debate</Text>
         </TouchableOpacity>
 
         {/* CONSOLA DE GESTIÓN */}
         <View style={styles.managementConsole}>
-          <Text style={[styles.consoleTitle, isDesktop && styles.consoleTitleDesktop]}>Consola de gestión</Text>
+          <Text style={[styles.consoleTitle, isDesktop && styles.consoleTitleDesktop, dynamicStyles.consoleTitle, isDesktop && dynamicStyles.consoleTitleDesktop]}>Consola de gestión</Text>
           
           <View style={[styles.actionGrid, isDesktop && styles.actionGridDesktop]}>
             <TouchableOpacity
@@ -353,7 +403,7 @@ export default function AdminAsamblea() {
               onPress={() => router.push({ pathname: '/admin/asistentes', params: { asambleaId } })}
             >
               <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>🧑‍🤝‍🧑</Text>
-              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Listado de asistentes</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop, dynamicStyles.actionCardText, isDesktop && dynamicStyles.actionCardTextDesktop]}>Listado de asistentes</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -361,7 +411,7 @@ export default function AdminAsamblea() {
               onPress={() => router.push({ pathname: '/admin/resultados', params: { asambleaId } })}
             >
               <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>📊</Text>
-              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Ver resultados</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop, dynamicStyles.actionCardText, isDesktop && dynamicStyles.actionCardTextDesktop]}>Ver resultados</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -369,7 +419,7 @@ export default function AdminAsamblea() {
               onPress={() => setCodigoModalVisible(true)}
             >
               <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>❕</Text>
-              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Mostrar código</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop, dynamicStyles.actionCardText, isDesktop && dynamicStyles.actionCardTextDesktop]}>Mostrar código</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -377,7 +427,7 @@ export default function AdminAsamblea() {
               onPress={() => router.push({ pathname: '/admin/propuestas', params: { asambleaId } })}
             >
               <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>📋</Text>
-              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Listado de propuestas</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop, dynamicStyles.actionCardText, isDesktop && dynamicStyles.actionCardTextDesktop]}>Listado de propuestas</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -385,7 +435,7 @@ export default function AdminAsamblea() {
               onPress={() => router.push({ pathname: '/admin/apoderados', params: { asambleaId } })}
             >
               <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>👥</Text>
-              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>{`Apoderados pendientes (${apoderadosPendientes})`}</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop, dynamicStyles.actionCardText, isDesktop && dynamicStyles.actionCardTextDesktop]}>{`Apoderados pendientes (${apoderadosPendientes})`}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -403,7 +453,7 @@ export default function AdminAsamblea() {
               }}
             >
               <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>📥</Text>
-              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Descargar acta</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop, dynamicStyles.actionCardText, isDesktop && dynamicStyles.actionCardTextDesktop]}>Descargar acta</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -413,7 +463,7 @@ export default function AdminAsamblea() {
           style={[styles.closeAssemblyBtn, isDesktop && styles.closeAssemblyBtnDesktop]}
           onPress={() => setCerrarModalVisible(true)}
         >
-          <Text style={[styles.closeAssemblyBtnText, isDesktop && styles.closeAssemblyBtnTextDesktop]}>🔴 Cerrar asamblea</Text>
+          <Text style={[styles.closeAssemblyBtnText, isDesktop && styles.closeAssemblyBtnTextDesktop, dynamicStyles.closeAssemblyBtnText, isDesktop && dynamicStyles.closeAssemblyBtnTextDesktop]}>🔴 Cerrar asamblea</Text>
         </TouchableOpacity>
 
       </View>
@@ -1058,17 +1108,17 @@ const styles = StyleSheet.create({
     minHeight: '100vh',
   },
   containerDesktop: {
-    maxWidth: 1600,
+    maxWidth: 1200,
     width: '95%',
-    paddingHorizontal: 48,
+    paddingHorizontal: 140,
   },
   headerCardDesktop: {
     padding: 48,
     marginBottom: 32,
   },
   codigoDesktop: {
-    fontSize: 72,
-    letterSpacing: 12,
+    fontSize: 56,
+    letterSpacing: 10,
     marginBottom: 24,
   },
   estadoBadgeDesktop: {
@@ -1083,7 +1133,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   systemStatusValueDesktop: {
-    fontSize: 28,
+    fontSize: 24,
   },
   statsGridDesktop: {
     gap: 24,
@@ -1093,11 +1143,11 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   statIconDesktop: {
-    fontSize: 48,
+    fontSize: 36,
     marginBottom: 12,
   },
   statNumberDesktop: {
-    fontSize: 56,
+    fontSize: 44,
   },
   statLabelDesktop: {
     fontSize: 18,
@@ -1110,7 +1160,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   statusValueDesktop: {
-    fontSize: 28,
+    fontSize: 24,
   },
   debateBtnDesktop: {
     padding: 24,

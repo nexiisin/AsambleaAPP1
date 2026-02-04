@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { descargarComprobanteAsistencia } from '@/src/services/pdf-asistencia';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 export default function ResidenteAsistencia() {
@@ -116,8 +117,44 @@ export default function ResidenteAsistencia() {
       }
 
       setCargando(false);
-      Alert.alert('Registrado', 'Salida registrada correctamente');
-      router.replace({ pathname: '/residente' });
+      
+      // Generar y descargar el comprobante de asistencia automáticamente
+      try {
+        await descargarComprobanteAsistencia({
+          nombreAsistente: nombreAsistente,
+          nombrePropietario: nombrePropietario,
+          apellidoPropietario: apellidoPropietario,
+          numeroCasa: numeroCasa,
+          casaRepresentada: esApoderado ? casaRepresentada : undefined,
+          esApoderado: esApoderado,
+          fecha: new Date().toISOString(),
+        });
+
+        // Mostrar mensaje de confirmación
+        Alert.alert(
+          '✅ Salida Registrada',
+          'Tu comprobante de asistencia ha sido descargado. ¡Gracias por acompañarnos en la asamblea!',
+          [
+            {
+              text: 'Aceptar',
+              onPress: () => router.replace({ pathname: '/residente' }),
+            }
+          ]
+        );
+      } catch (pdfError) {
+        console.error('Error descargando comprobante:', pdfError);
+        // Si falla el PDF, igualmente sacar al usuario
+        Alert.alert(
+          '✅ Salida Registrada',
+          'Tu salida ha sido registrada correctamente. ¡Gracias por acompañarnos en la asamblea!',
+          [
+            {
+              text: 'Aceptar',
+              onPress: () => router.replace({ pathname: '/residente' }),
+            }
+          ]
+        );
+      }
     } catch (e) {
       console.error('Error registrando salida:', e);
       setCargando(false);

@@ -8,11 +8,13 @@ import {
   Animated,
   Dimensions,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = Math.min(width * 0.5, 180);
@@ -30,6 +32,7 @@ export default function SalaEspera() {
   const [scaleAnim] = useState(new Animated.Value(0.8));
   const [tiempoRestante, setTiempoRestante] = useState('');
   const [ingresoCerrado, setIngresoCerrado] = useState(false);
+  const [mostrarModalAdvertencia, setMostrarModalAdvertencia] = useState(true);
 
   // Estados del quórum
   const [totalViviendas, setTotalViviendas] = useState<number | null>(null);
@@ -268,6 +271,38 @@ export default function SalaEspera() {
 
   return (
     <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.container}>
+      {/* Modal de advertencia sobre salirse antes de tiempo */}
+      <Modal
+        visible={mostrarModalAdvertencia}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMostrarModalAdvertencia(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalIcon}>⚠️</Text>
+            <Text style={styles.modalTitle}>Importante</Text>
+            <Text style={styles.modalText}>
+              Al ingresar a la asamblea, te comprometes a permanecer hasta el final del proceso.
+            </Text>
+            <Text style={styles.modalTextWarning}>
+              Si abandonas la sala antes de que finalice la asamblea:
+            </Text>
+            <View style={styles.warningList}>
+              <Text style={styles.warningItem}>• No podrás votar en las propuestas pendientes</Text>
+              <Text style={styles.warningItem}>• Tu participación quedará registrada como incompleta</Text>
+              <Text style={styles.warningItem}>• Deberás esperar autorización del administrador para salir</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setMostrarModalAdvertencia(false)}
+            >
+              <Text style={styles.modalButtonText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <Animated.View
         style={[
           styles.content,
@@ -607,5 +642,79 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
+  },
+
+  // Estilos del modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  modalIcon: {
+    fontSize: 56,
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#dc2626',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#374151',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 12,
+  },
+  modalTextWarning: {
+    fontSize: 15,
+    color: '#065f46',
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  warningList: {
+    alignSelf: 'stretch',
+    backgroundColor: '#fef3c7',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  warningItem: {
+    fontSize: 14,
+    color: '#92400e',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  modalButton: {
+    backgroundColor: '#16a34a',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    minWidth: 150,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
