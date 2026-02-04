@@ -15,8 +15,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { descargarActaAsamblea } from '@/src/services/pdf-acta';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { useResponsive } from '@/src/hooks/useResponsive';
 
 export default function AdminAsamblea() {
+  const { isDesktop } = useResponsive();
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
 
   const [asamblea, setAsamblea] = useState<any>(null);
@@ -55,19 +57,26 @@ export default function AdminAsamblea() {
 
     const { data: asistencias } = await supabase
       .from('asistencias')
-      .select('*')
+      .select('vivienda_id, es_apoderado, estado_apoderado, casa_representada')
       .eq('asamblea_id', asambleaId);
 
-    let total = 0;
+    // Calcular viviendas únicas representadas (igual que en cronometro)
+    const setViviendas = new Set<string>();
     let pendientes = 0;
 
-    (asistencias || []).forEach(a => {
-      total += 1;
-      if (a.es_apoderado) {
-        if (a.estado_apoderado === 'APROBADO') total += 1;
-        if (a.estado_apoderado === 'PENDIENTE') pendientes += 1;
+    (asistencias || []).forEach(asistencia => {
+      setViviendas.add(asistencia.vivienda_id);
+      if (asistencia.es_apoderado) {
+        if (asistencia.estado_apoderado === 'APROBADO' && asistencia.casa_representada) {
+          setViviendas.add(asistencia.casa_representada);
+        }
+        if (asistencia.estado_apoderado === 'PENDIENTE') {
+          pendientes += 1;
+        }
       }
     });
+
+    const viviendasRepresentadas = setViviendas.size;
 
     let totalVivs = a?.total_viviendas ?? null;
     if (!totalVivs) {
@@ -77,12 +86,12 @@ export default function AdminAsamblea() {
       totalVivs = viviendasCount || null;
     }
 
-    const pct = totalVivs ? Math.round((total / totalVivs) * 100) : 0;
+    const pct = totalVivs ? Math.round((viviendasRepresentadas / totalVivs) * 100) : 0;
     const minimoViviendas = totalVivs ? Math.floor(totalVivs / 2) + 1 : 0;
-    const cumple = total >= minimoViviendas;
+    const cumple = viviendasRepresentadas >= minimoViviendas;
 
     setTotalViviendas(totalVivs);
-    setTotalAsistentes(total);
+    setTotalAsistentes(viviendasRepresentadas);
     setApoderadosPendientes(pendientes);
     setPorcentajeQuorum(pct);
     setQuorumCumplido(cumple);
@@ -240,30 +249,41 @@ export default function AdminAsamblea() {
 
   return (
     <LinearGradient
-      colors={['#5fba8b', '#d9f3e2']}
+      colors={['#10b981', '#ffffff']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
-      <ScrollView contentContainerStyle={styles.page}>
-        <View style={styles.container}>
+      <ScrollView contentContainerStyle={[styles.page, isDesktop && styles.pageDesktop]}>
+        <View style={[styles.container, isDesktop && styles.containerDesktop]}>
 
-        {/* HEADER */}
-        <View style={styles.header}>
-          <Text style={styles.label}>Código de acceso</Text>
-          <Text style={styles.codigo}>{asamblea.codigo_acceso}</Text>
+        {/* HEADER CON CÓDIGO */}
+        <View style={[styles.headerCard, isDesktop && styles.headerCardDesktop]}>
+          <Text style={styles.headerLabel}>Código de acceso</Text>
+          <Text style={[styles.codigo, isDesktop && styles.codigoDesktop]}>{asamblea.codigo_acceso}</Text>
+          <View style={[
+            styles.estadoBadge, 
+            asamblea.estado === 'CERRADA' && styles.estadoBadgeClosed,
+            isDesktop && styles.estadoBadgeDesktop
+          ]}>
+            <Text style={[styles.estadoBadgeText, isDesktop && styles.estadoBadgeTextDesktop]}>{asamblea.estado}</Text>
+          </View>
         </View>
 
-        {/* TIEMPO DE INGRESO */}
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>⏱️ Tiempo de ingreso</Text>
-          <Text style={styles.infoText}>
+        {/* ESTADO DEL SISTEMA */}
+        <View style={[styles.systemStatusCard, isDesktop && styles.systemStatusCardDesktop]}>
+          <View style={styles.systemStatusHeader}>
+            <Text style={styles.systemStatusIcon}>⏱️</Text>
+            <Text style={styles.systemStatusTitle}>TIEMPO DE INGRESO</Text>
+          </View>
+          <Text style={[styles.systemStatusValue, isDesktop && styles.systemStatusValueDesktop]}>
             {!asamblea.hora_cierre_ingreso 
               ? 'ABIERTO' 
               : tiempoRestante || 'Calculando...'}
           </Text>
-
           {asamblea.hora_cierre_ingreso && tiempoRestante && tiempoRestante !== 'CERRADO' && (
             <TouchableOpacity
-              style={styles.smallBtn}
+              style={styles.closeNowBtn}
               onPress={async () => {
                 await supabase
                   .from('asambleas')
@@ -271,117 +291,130 @@ export default function AdminAsamblea() {
                   .eq('id', asambleaId);
               }}
             >
-              <Text style={styles.smallBtnText}>Cerrar ingreso ahora</Text>
+              <Text style={styles.closeNowBtnText}>Cerrar ingreso ahora</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* ESTADÍSTICAS */}
-        <View style={styles.stats}>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{totalAsistentes}</Text>
-            <Text>Asistentes</Text>
+        {/* ESTADÍSTICAS EN CARDS */}
+        <View style={[styles.statsGrid, isDesktop && styles.statsGridDesktop]}>
+          <View style={[styles.statCard, isDesktop && styles.statCardDesktop]}>
+            <Text style={[styles.statIcon, isDesktop && styles.statIconDesktop]}>👥</Text>
+            <Text style={[styles.statNumber, isDesktop && styles.statNumberDesktop]}>{totalAsistentes}</Text>
+            <Text style={[styles.statLabel, isDesktop && styles.statLabelDesktop]}>Asistentes</Text>
           </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{propuestas.length}</Text>
-            <Text>Propuestas</Text>
+          <View style={[styles.statCard, isDesktop && styles.statCardDesktop]}>
+            <Text style={[styles.statIcon, isDesktop && styles.statIconDesktop]}>💡</Text>
+            <Text style={[styles.statNumber, isDesktop && styles.statNumberDesktop]}>{propuestas.length}</Text>
+            <Text style={[styles.statLabel, isDesktop && styles.statLabelDesktop]}>Propuestas</Text>
           </View>
         </View>
 
-        {/* ESTADO CENTRAL */}
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>
-            📊 Estado: <Text style={{ color: estadoColor }}>{estadoVisual}</Text>
-          </Text>
-
-      <TouchableOpacity
-        style={[styles.orangeBtn, !quorumCumplido && styles.disabledBtn]}
-        disabled={!quorumCumplido}
-        onPress={() =>
-          router.push({
-            pathname: '/admin/cronometro',
-            params: { asambleaId },
-          })
-        }
-      >
-        <Text style={styles.btnText}>💬 Iniciar debate</Text>
-      </TouchableOpacity>
-
-      {!quorumCumplido && (
-        <Text style={styles.quorumWarning}>
-          Se requiere mínimo 50% + 1 vivienda ({totalViviendas ? Math.floor(totalViviendas / 2) + 1 : '?'} viviendas) para iniciar.
-        </Text>
-      )}
-
-          {/* Botón Asistencia - abre modal para conteo de registros */}
-          <TouchableOpacity
-            style={[styles.primaryButton, { marginTop: 12 }]}
-            onPress={() => setAsistenciaModalVisible(true)}
-          >
-            <Text style={styles.primaryButtonText}>🧾 Asistencia</Text>
-          </TouchableOpacity>
+        {/* ESTADO Y QUORUM */}
+        <View style={[styles.statusCard, isDesktop && styles.statusCardDesktop]}>
+          <Text style={[styles.statusTitle, isDesktop && styles.statusTitleDesktop]}>📊 Estado de la asamblea</Text>
+          <Text style={[styles.statusValue, isDesktop && styles.statusValueDesktop, { color: estadoColor }]}>{estadoVisual}</Text>
+          
+          {!quorumCumplido && (
+            <View style={styles.quorumAlert}>
+              <Text style={styles.quorumAlertIcon}>⚠️</Text>
+              <Text style={styles.quorumAlertText}>
+                Se requiere mínimo 50% + 1 vivienda ({totalViviendas ? Math.floor(totalViviendas / 2) + 1 : '?'} viviendas) para iniciar.
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* ACCIONES */}
-        <View style={styles.actions}>
-          <Action
-            text="🧑‍🤝‍🧑 Listado de asistentes"
-            color="#059669"
-            onPress={() =>
-              router.push({ pathname: '/admin/asistentes', params: { asambleaId } })
-            }
-          />
+        {/* BOTÓN INICIAR DEBATE */}
+        <TouchableOpacity
+          style={[
+            styles.debateBtn, 
+            !quorumCumplido && styles.debateBtnDisabled,
+            isDesktop && styles.debateBtnDesktop
+          ]}
+          disabled={!quorumCumplido}
+          onPress={() =>
+            router.push({
+              pathname: '/admin/cronometro',
+              params: { asambleaId },
+            })
+          }
+        >
+          <Text style={[styles.debateBtnText, isDesktop && styles.debateBtnTextDesktop]}>💬 Iniciar debate</Text>
+        </TouchableOpacity>
 
-          <Action
-            text="❕ Mostrar Código"
-            color="#8b5cf6"
-            onPress={() => setCodigoModalVisible(true)}
-          />
+        {/* CONSOLA DE GESTIÓN */}
+        <View style={styles.managementConsole}>
+          <Text style={[styles.consoleTitle, isDesktop && styles.consoleTitleDesktop]}>Consola de gestión</Text>
+          
+          <View style={[styles.actionGrid, isDesktop && styles.actionGridDesktop]}>
+            <TouchableOpacity
+              style={[styles.actionCard, isDesktop && styles.actionCardDesktop, { backgroundColor: '#059669' }]}
+              onPress={() => router.push({ pathname: '/admin/asistentes', params: { asambleaId } })}
+            >
+              <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>🧑‍🤝‍🧑</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Listado de asistentes</Text>
+            </TouchableOpacity>
 
-          <Action
-            text="📋 Listado de propuestas"
-            color="#2563eb"
-            onPress={() =>
-              router.push({ pathname: '/admin/propuestas', params: { asambleaId } })
-            }
-          />
+            <TouchableOpacity
+              style={[styles.actionCard, isDesktop && styles.actionCardDesktop, { backgroundColor: '#2563eb' }]}
+              onPress={() => router.push({ pathname: '/admin/resultados', params: { asambleaId } })}
+            >
+              <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>📊</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Ver resultados</Text>
+            </TouchableOpacity>
 
-          <Action
-            text={`👥 Apoderados pendientes (${apoderadosPendientes})`}
-            color="#0ea5a4"
-            onPress={() =>
-              router.push({ pathname: '/admin/apoderados', params: { asambleaId } })
-            }
-          />
+            <TouchableOpacity
+              style={[styles.actionCard, isDesktop && styles.actionCardDesktop, { backgroundColor: '#8b5cf6' }]}
+              onPress={() => setCodigoModalVisible(true)}
+            >
+              <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>❕</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Mostrar código</Text>
+            </TouchableOpacity>
 
-          <Action
-            text="📊 Ver resultados"
-            color="#10b981"
-            onPress={() => router.push({ pathname: '/admin/resultados', params: { asambleaId } })}
-          />
+            <TouchableOpacity
+              style={[styles.actionCard, isDesktop && styles.actionCardDesktop, { backgroundColor: '#2563eb' }]}
+              onPress={() => router.push({ pathname: '/admin/propuestas', params: { asambleaId } })}
+            >
+              <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>📋</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Listado de propuestas</Text>
+            </TouchableOpacity>
 
-          <Action
-            text="📥 Descargar acta"
-            color="#6366f1"
-            onPress={async () => {
-              try {
-                Alert.alert('Generando acta', 'Por favor espera...');
-                if (asambleaId) {
-                  await descargarActaAsamblea(asambleaId);
-                  Alert.alert('✓ Éxito', 'El acta se ha descargado correctamente');
+            <TouchableOpacity
+              style={[styles.actionCard, isDesktop && styles.actionCardDesktop, { backgroundColor: '#0ea5a4' }]}
+              onPress={() => router.push({ pathname: '/admin/apoderados', params: { asambleaId } })}
+            >
+              <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>👥</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>{`Apoderados pendientes (${apoderadosPendientes})`}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, isDesktop && styles.actionCardDesktop, { backgroundColor: '#6366f1' }]}
+              onPress={async () => {
+                try {
+                  Alert.alert('Generando acta', 'Por favor espera...');
+                  if (asambleaId) {
+                    await descargarActaAsamblea(asambleaId);
+                    Alert.alert('✓ Éxito', 'El acta se ha descargado correctamente');
+                  }
+                } catch (error: any) {
+                  Alert.alert('❌ Error', error.message || 'No se pudo descargar el acta');
                 }
-              } catch (error: any) {
-                Alert.alert('❌ Error', error.message || 'No se pudo descargar el acta');
-              }
-            }}
-          />
-
-          <Action
-            text="🔴 Cerrar asamblea"
-            color="#dc2626"
-            onPress={() => setCerrarModalVisible(true)}
-          />
+              }}
+            >
+              <Text style={[styles.actionCardIcon, isDesktop && styles.actionCardIconDesktop]}>📥</Text>
+              <Text style={[styles.actionCardText, isDesktop && styles.actionCardTextDesktop]}>Descargar acta</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* BOTÓN CERRAR ASAMBLEA */}
+        <TouchableOpacity
+          style={[styles.closeAssemblyBtn, isDesktop && styles.closeAssemblyBtnDesktop]}
+          onPress={() => setCerrarModalVisible(true)}
+        >
+          <Text style={[styles.closeAssemblyBtnText, isDesktop && styles.closeAssemblyBtnTextDesktop]}>🔴 Cerrar asamblea</Text>
+        </TouchableOpacity>
 
       </View>
     </ScrollView>
@@ -609,88 +642,261 @@ const modalStyles = StyleSheet.create({
   btn: { backgroundColor: '#64748b', padding: 10, borderRadius: 8, alignItems: 'center', marginRight: 8 },
 });
 
-function Action({ text, color, onPress }: any) {
+function Action({ text, color, isDesktop, onPress }: any) {
   return (
     <TouchableOpacity
-      style={[styles.actionBtn, { backgroundColor: color }]}
+      style={[styles.actionBtn, { backgroundColor: color }, isDesktop && { paddingVertical: 20 }]}
       onPress={onPress}
     >
-      <Text style={styles.btnText}>{text}</Text>
+      <Text style={[styles.btnText, isDesktop && { fontSize: 18 }]}>{text}</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { paddingVertical: 24, alignItems: 'center' },
-  container: { maxWidth: 420, width: '100%', paddingHorizontal: 16 },
+  page: { paddingVertical: 32, alignItems: 'center', paddingBottom: 120 },
+  container: { maxWidth: 1200, width: '100%', paddingHorizontal: 20 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  header: { alignItems: 'center', marginBottom: 20 },
-  label: { color: '#64748b' },
-  codigo: { fontSize: 34, fontWeight: 'bold', letterSpacing: 6, color: '#16a34a' },
-
-  infoBox: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
+  // Header Card
+  headerCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 32,
+    marginBottom: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  headerLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  codigo: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    letterSpacing: 8,
+    color: '#10b981',
     marginBottom: 16,
-    minHeight: 100,
-    justifyContent: 'center',
   },
-  infoTitle: { fontWeight: 'bold', marginBottom: 8 },
-  infoText: { fontSize: 16, color: '#16a34a', fontWeight: '600' },
-
-  stats: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  stat: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
+  estadoBadge: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
-  statValue: { fontSize: 28, fontWeight: 'bold' },
-
-  actions: { gap: 12 },
-
-  actionBtn: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-
-  btnText: { color: '#fff', fontWeight: '600', textAlign: 'center' },
-
-  smallBtn: {
-    marginTop: 8,
+  estadoBadgeClosed: {
     backgroundColor: '#ef4444',
-    padding: 10,
-    borderRadius: 8,
+  },
+  estadoBadgeText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
+    textTransform: 'uppercase',
+  },
+
+  // System Status Card
+  systemStatusCard: {
+    backgroundColor: '#1f2937',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 20,
+  },
+  systemStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  systemStatusIcon: {
+    fontSize: 24,
+    marginRight: 8,
+  },
+  systemStatusTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  systemStatusValue: {
+    color: '#10b981',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  closeNowBtn: {
+    backgroundColor: '#ef4444',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 12,
     alignItems: 'center',
   },
-  smallBtnText: { color: '#fff' },
-
-  orangeBtn: { backgroundColor: '#f59e0b', padding: 14, borderRadius: 10, marginTop: 8 },
-  redBtn: { backgroundColor: '#ef4444', padding: 14, borderRadius: 10, marginTop: 8 },
-  grayBtn: { backgroundColor: '#64748b', padding: 14, borderRadius: 10, marginTop: 8 },
-  purpleBtn: { backgroundColor: '#8b5cf6', padding: 14, borderRadius: 10, marginTop: 8 },
-  disabledBtn: { opacity: 0.6 },
-  quorumWarning: {
-    marginTop: 6,
-    fontSize: 12,
-    color: '#b45309',
-    textAlign: 'center',
+  closeNowBtnText: {
+    color: '#ffffff',
     fontWeight: '600',
   },
-  primaryButton: {
-    backgroundColor: '#16a34a',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
+
+  // Stats Grid
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 20,
   },
-  primaryButtonText: {
-    color: '#fff',
+  statCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  statIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  statNumber: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+
+  // Status Card
+  statusCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  statusTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  statusValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  quorumAlert: {
+    backgroundColor: '#fef3c7',
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#f59e0b',
+  },
+  quorumAlertIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  quorumAlertText: {
+    flex: 1,
+    color: '#92400e',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  // Debate Button
+  debateBtn: {
+    backgroundColor: '#f59e0b',
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#f59e0b',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  debateBtnDisabled: {
+    backgroundColor: '#d1d5db',
+    opacity: 0.6,
+  },
+  debateBtnText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+
+  // Management Console
+  managementConsole: {
+    marginBottom: 32,
+  },
+  consoleTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  actionCard: {
+    width: '48%',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  actionCardIcon: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  actionCardText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  // Close Assembly Button
+  closeAssemblyBtn: {
+    backgroundColor: '#ef4444',
+    padding: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 24,
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  closeAssemblyBtnText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 
   // Estilos para el modal de confirmación
@@ -746,7 +952,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  statLabel: {
+  statItemLabel: {
     fontSize: 14,
     color: '#6b7280',
     fontWeight: '500',
@@ -844,5 +1050,98 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+
+  // Estilos para Desktop (Pantalla grande en la sala)
+  pageDesktop: {
+    paddingVertical: 48,
+    minHeight: '100vh',
+  },
+  containerDesktop: {
+    maxWidth: 1600,
+    width: '95%',
+    paddingHorizontal: 48,
+  },
+  headerCardDesktop: {
+    padding: 48,
+    marginBottom: 32,
+  },
+  codigoDesktop: {
+    fontSize: 72,
+    letterSpacing: 12,
+    marginBottom: 24,
+  },
+  estadoBadgeDesktop: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+  },
+  estadoBadgeTextDesktop: {
+    fontSize: 18,
+  },
+  systemStatusCardDesktop: {
+    padding: 32,
+    marginBottom: 32,
+  },
+  systemStatusValueDesktop: {
+    fontSize: 28,
+  },
+  statsGridDesktop: {
+    gap: 24,
+    marginBottom: 32,
+  },
+  statCardDesktop: {
+    padding: 32,
+  },
+  statIconDesktop: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  statNumberDesktop: {
+    fontSize: 56,
+  },
+  statLabelDesktop: {
+    fontSize: 18,
+  },
+  statusCardDesktop: {
+    padding: 32,
+    marginBottom: 32,
+  },
+  statusTitleDesktop: {
+    fontSize: 20,
+  },
+  statusValueDesktop: {
+    fontSize: 28,
+  },
+  debateBtnDesktop: {
+    padding: 24,
+    marginBottom: 32,
+  },
+  debateBtnTextDesktop: {
+    fontSize: 22,
+  },
+  consoleTitleDesktop: {
+    fontSize: 22,
+    marginBottom: 24,
+  },
+  actionGridDesktop: {
+    gap: 20,
+  },
+  actionCardDesktop: {
+    minWidth: '31%',
+    width: 'auto',
+    padding: 28,
+    minHeight: 120,
+  },
+  actionCardIconDesktop: {
+    fontSize: 36,
+  },
+  actionCardTextDesktop: {
+    fontSize: 16,
+  },
+  closeAssemblyBtnDesktop: {
+    padding: 24,
+  },
+  closeAssemblyBtnTextDesktop: {
+    fontSize: 22,
   },
 });

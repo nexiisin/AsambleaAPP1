@@ -34,5 +34,5 @@ Certificado de asistencia de asamblea.
 
 información de repercusiones al principio de la asamblea
 
-el cambio de fuente (trabajamdo)
+el cambio de fuente (listo)
 

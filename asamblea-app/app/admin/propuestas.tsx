@@ -13,10 +13,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { useResponsive } from '@/src/hooks/useResponsive';
 
-const PANEL_WIDTH = 520;
+const PANEL_WIDTH_MOBILE = 520;
+const PANEL_WIDTH_DESKTOP = 900;
 
 export default function Propuestas() {
+  const { isDesktop } = useResponsive();
+  const PANEL_WIDTH = isDesktop ? PANEL_WIDTH_DESKTOP : PANEL_WIDTH_MOBILE;
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
   const [propuestas, setPropuestas] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -162,7 +166,7 @@ export default function Propuestas() {
 
   return (
     <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.page}>
-      <View style={styles.container}>
+      <View style={[styles.container, { maxWidth: PANEL_WIDTH }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>← Volver</Text>
         </TouchableOpacity>
@@ -307,7 +311,7 @@ export default function Propuestas() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, alignItems: 'center' },
-  container: { width: '100%', maxWidth: 700, padding: 16, alignItems: 'center' },
+  container: { width: '100%', padding: 16, alignItems: 'center' },
   backButton: { alignSelf: 'flex-start', marginBottom: 8 },
   backButtonText: { color: '#065f46', fontWeight: '700', fontSize: 15 },
   title: { fontSize: 26, fontWeight: '800', marginBottom: 16, color: '#1f2937' },

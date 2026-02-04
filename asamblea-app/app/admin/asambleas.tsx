@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { useResponsive } from '@/src/hooks/useResponsive';
 
 type Asamblea = {
   id: string;
@@ -17,9 +18,12 @@ type Asamblea = {
   estado: string;
 };
 
-const PANEL_WIDTH = 520;
+const PANEL_WIDTH_MOBILE = 520;
+const PANEL_WIDTH_DESKTOP = 900;
 
 export default function AsambleasList() {
+  const { isDesktop } = useResponsive();
+  const PANEL_WIDTH = isDesktop ? PANEL_WIDTH_DESKTOP : PANEL_WIDTH_MOBILE;
   const [asambleas, setAsambleas] = useState<Asamblea[]>([]);
 
   const cargarAsambleas = async () => {
@@ -40,7 +44,7 @@ export default function AsambleasList() {
       colors={['#5fba8b', '#d9f3e2']}
       style={styles.page}
     >
-      <View style={styles.panel}>
+      <View style={[styles.panel, { maxWidth: PANEL_WIDTH }]}>
         <Text style={styles.title}>Asambleas existentes</Text>
 
         {asambleas.length === 0 ? (
@@ -92,7 +96,6 @@ const styles = StyleSheet.create({
 
   panel: {
     width: '100%',
-    maxWidth: PANEL_WIDTH,
     paddingTop: 32,
     paddingHorizontal: 16,
     flex: 1,

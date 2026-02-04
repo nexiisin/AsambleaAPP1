@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { useResponsive } from '@/src/hooks/useResponsive';
 
 type Apoderado = {
   id: string;
@@ -27,9 +28,12 @@ type Apoderado = {
 
 type FiltroEstado = 'TODOS' | 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
 
-const PANEL_WIDTH = 520;
+const PANEL_WIDTH_MOBILE = 520;
+const PANEL_WIDTH_DESKTOP = 900;
 
 export default function Apoderados() {
+  const { isDesktop } = useResponsive();
+  const PANEL_WIDTH = isDesktop ? PANEL_WIDTH_DESKTOP : PANEL_WIDTH_MOBILE;
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
   
   const [apoderados, setApoderados] = useState<Apoderado[]>([]);
@@ -260,7 +264,7 @@ export default function Apoderados() {
 
   return (
     <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.page}>
-      <View style={styles.container}>
+      <View style={[styles.container, { maxWidth: PANEL_WIDTH }]}>
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
@@ -439,7 +443,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    maxWidth: PANEL_WIDTH,
     width: '100%',
     alignSelf: 'center',
     paddingHorizontal: 16,
