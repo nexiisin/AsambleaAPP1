@@ -205,10 +205,10 @@ const generarPDFActa = async (
           background-color: #e5e7eb;
           min-height: 6px;
         }
-        .barra-si { background-color: #34d399; }
+        .barra-si { background-color: #22c55e; }
         .barra-no { background-color: #ef4444; }
-        .barra-novoto { background-color: #38393a; }
-        .barra-noasistio { background-color: #0e0c1b; }
+        .barra-novoto { background-color: #f59e0b; }
+        .barra-noasistio { background-color: #9ca3af; }
         .barra-label {
           margin-top: 6px;
           font-size: 11px;
@@ -649,9 +649,9 @@ const agregarGraficoBarras = (
 
   const startX = leftMargin + 10;
   const bars = [
-    { label: 'SÍ', value: votosSi, pct: pctSi, color: [52, 211, 153] },
+    { label: 'SÍ', value: votosSi, pct: pctSi, color: [34, 197, 94] },
     { label: 'NO', value: votosNo, pct: pctNo, color: [239, 68, 68] },
-    { label: 'No votaron', value: noVotaron, pct: pctNoVotaron, color: [209, 213, 219] },
+    { label: 'No votaron', value: noVotaron, pct: pctNoVotaron, color: [245, 158, 11] },
     { label: 'No asistieron', value: noAsistieron, pct: pctNoAsistieron, color: [156, 163, 175] },
   ];
 
