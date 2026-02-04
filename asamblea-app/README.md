@@ -26,5 +26,8 @@ el QUORUM eso significa que en la sala de espera tiene que tener una barra de pr
 
 los  google froms  (faltan dos vinculos)
 
+faltantes
+
+Certificado de asistencia de asamblea.
 
 cambiar logo de ventana de google y tambien, cambiar el nombre de la pagina a altos del guali
