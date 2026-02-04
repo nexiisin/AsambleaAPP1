@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 const PANEL_WIDTH = 520;
 
@@ -299,6 +300,7 @@ export default function Propuestas() {
           </View>
         </Modal>
       </View>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

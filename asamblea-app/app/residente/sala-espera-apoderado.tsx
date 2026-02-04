@@ -10,6 +10,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 export default function SalaEsperaApoderado() {
   const { asambleaId, asistenciaId, numeroCasa, casaRepresentada } = useLocalSearchParams<{
@@ -185,6 +186,7 @@ export default function SalaEsperaApoderado() {
           <Text style={styles.exitButtonText}>Salir</Text>
         </TouchableOpacity>
       </View>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

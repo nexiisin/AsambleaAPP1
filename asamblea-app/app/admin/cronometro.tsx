@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = Math.min(width * 0.35, 140);
@@ -366,6 +367,7 @@ export default function Cronometro() {
         </>
       )}
     </ScrollView>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

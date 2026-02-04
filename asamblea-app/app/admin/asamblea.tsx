@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { descargarActaAsamblea } from '@/src/services/pdf-acta';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 export default function AdminAsamblea() {
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
@@ -475,6 +476,7 @@ export default function AdminAsamblea() {
           </View>
         </View>
       </Modal>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

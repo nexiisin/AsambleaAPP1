@@ -369,6 +369,7 @@ export default function SalaEspera() {
           <Text style={styles.statusText}>Conectado</Text>
         </View>
       </Animated.View>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

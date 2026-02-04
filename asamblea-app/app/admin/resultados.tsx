@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 interface ResultStats {
   votos_si: number;
@@ -318,6 +319,7 @@ export default function AdminResultados() {
             </View>
           </View>
         </ScrollView>
+        <AccessibilityFAB />
       </LinearGradient>
     );
   }

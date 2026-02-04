@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 type Apoderado = {
   id: string;
@@ -427,6 +428,7 @@ export default function Apoderados() {
           </Pressable>
         </Modal>
       </View>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

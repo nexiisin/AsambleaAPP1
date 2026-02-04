@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 interface ResultStats {
   votos_si: number;
@@ -343,6 +344,7 @@ export default function Resultados() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

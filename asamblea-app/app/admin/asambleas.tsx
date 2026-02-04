@@ -9,6 +9,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 type Asamblea = {
   id: string;
@@ -78,6 +79,7 @@ export default function AsambleasList() {
         )}
 
       </View>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

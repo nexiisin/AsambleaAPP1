@@ -1,5 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { ScaledText } from '@/src/components/ScaledText';
 
 const FORMULARIOS = {
   documento: 'https://docs.google.com/forms/d/e/1FAIpQLScGGDYB2ccY6trDeM8G7R_oG-dIIIoz3d8igCHfjYKnUE5G6w/viewform?usp=header',
@@ -26,11 +28,11 @@ export default function PQRS() {
   return (
     <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Solicitudes y PQRS</Text>
+        <ScaledText style={styles.title}>Solicitudes y PQRS</ScaledText>
 
-        <Text style={styles.subtitle}>
+        <ScaledText style={styles.subtitle}>
           Selecciona el tipo de solicitud
-        </Text>
+        </ScaledText>
 
         {BOTONES.map((boton) => (
           <TouchableOpacity
@@ -38,10 +40,11 @@ export default function PQRS() {
             style={styles.button}
             onPress={() => abrirFormulario(boton.key)}
           >
-            <Text style={styles.buttonText}>{boton.texto}</Text>
+            <ScaledText style={styles.buttonText}>{boton.texto}</ScaledText>
           </TouchableOpacity>
         ))}
       </View>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

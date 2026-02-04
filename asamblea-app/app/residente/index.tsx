@@ -11,6 +11,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { ScaledText } from '@/src/components/ScaledText';
 
 export default function ResidenteScreen() {
   // paso 1 o 2
@@ -237,9 +239,9 @@ export default function ResidenteScreen() {
       {/* ================= PASO 1 ================= */}
       {step === 1 && (
         <View style={styles.card}>
-          <Text style={styles.title}>
+          <ScaledText style={styles.title}>
             Ingresa el código de la asamblea
-          </Text>
+          </ScaledText>
 
           <TextInput
             value={codigo}
@@ -254,9 +256,9 @@ export default function ResidenteScreen() {
             onPress={validarCodigo}
             disabled={cargando}
           >
-            <Text style={styles.buttonText}>
+            <ScaledText style={styles.buttonText}>
               {cargando ? 'Validando...' : 'Siguiente'}
-            </Text>
+            </ScaledText>
           </TouchableOpacity>
         </View>
       )}
@@ -264,9 +266,9 @@ export default function ResidenteScreen() {
       {/* ================= PASO 2 ================= */}
       {step === 2 && (
         <View style={styles.card}>
-          <Text style={styles.title}>
+          <ScaledText style={styles.title}>
             Datos del asistente
-          </Text>
+          </ScaledText>
 
           <TextInput
             placeholder="Nombre del propietario"
@@ -300,9 +302,9 @@ export default function ResidenteScreen() {
             style={styles.checkbox}
             onPress={() => setEsApoderado(!esApoderado)}
           >
-            <Text style={styles.checkboxText}>
+            <ScaledText style={styles.checkboxText}>
               {esApoderado ? '☑' : '☐'} ¿Es apoderado de otra casa?
-            </Text>
+            </ScaledText>
           </TouchableOpacity>
 
           {esApoderado && (
@@ -319,12 +321,15 @@ export default function ResidenteScreen() {
             onPress={ingresarAsamblea}
             disabled={cargando}
           >
-            <Text style={styles.buttonText}>
+            <ScaledText style={styles.buttonText}>
               {cargando ? 'Ingresando...' : 'Ingresar'}
-            </Text>
+            </ScaledText>
           </TouchableOpacity>
         </View>
       )}
+      
+      {/* FAB de Accesibilidad */}
+      <AccessibilityFAB />
       </ScrollView>
     </LinearGradient>
   );

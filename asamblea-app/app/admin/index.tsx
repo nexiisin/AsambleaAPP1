@@ -14,6 +14,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { ScaledText } from '@/src/components/ScaledText';
 
 const PANEL_WIDTH = 520;
 
@@ -100,13 +102,13 @@ export default function AdminHome() {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.loginPanel}>
-            <Text style={styles.title}>🔐 Acceso Administrador</Text>
-            <Text style={styles.subtitle}>
+            <ScaledText style={styles.title}>🔐 Acceso Administrador</ScaledText>
+            <ScaledText style={styles.subtitle}>
               Ingresa tus credenciales para continuar
-            </Text>
+            </ScaledText>
             
             <View style={styles.formContainer}>
-              <Text style={styles.label}>Usuario</Text>
+              <ScaledText style={styles.label}>Usuario</ScaledText>
               <TextInput
                 style={styles.input}
                 placeholder="Admin o Administrador"
@@ -116,7 +118,7 @@ export default function AdminHome() {
                 autoCorrect={false}
               />
 
-              <Text style={styles.label}>Contraseña</Text>
+              <ScaledText style={styles.label}>Contraseña</ScaledText>
               <TextInput
                 style={styles.input}
                 placeholder="Ingresa tu contraseña"
@@ -131,14 +133,14 @@ export default function AdminHome() {
                 style={styles.loginButton}
                 onPress={iniciarSesion}
               >
-                <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
+                <ScaledText style={styles.loginButtonText}>Iniciar Sesión</ScaledText>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => router.back()}
               >
-                <Text style={styles.backButtonText}>← Volver</Text>
+                <ScaledText style={styles.backButtonText}>← Volver</ScaledText>
               </TouchableOpacity>
             </View>
           </View>
@@ -156,8 +158,8 @@ export default function AdminHome() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.panel}>
-        <Text style={styles.title}>Panel Administrador</Text>
-        <Text style={styles.welcomeText}>Bienvenido, {usuario}</Text>
+        <ScaledText style={styles.title}>Panel Administrador</ScaledText>
+        <ScaledText style={styles.welcomeText}>Bienvenido, {usuario}</ScaledText>
 
         {/* Crear nueva asamblea */}
         <TouchableOpacity
@@ -165,9 +167,9 @@ export default function AdminHome() {
           onPress={() => setModalVisible(true)}
           disabled={cargando}
         >
-          <Text style={styles.primaryButtonText}>
+          <ScaledText style={styles.primaryButtonText}>
             ➕ Crear nueva asamblea
-          </Text>
+          </ScaledText>
         </TouchableOpacity>
 
         {/* Ver asambleas existentes */}
@@ -175,9 +177,9 @@ export default function AdminHome() {
           style={styles.secondaryButton}
           onPress={() => router.push('/admin/asambleas')}
         >
-          <Text style={styles.secondaryButtonText}>
+          <ScaledText style={styles.secondaryButtonText}>
             📂 Ver asambleas existentes
-          </Text>
+          </ScaledText>
         </TouchableOpacity>
 
         {/* Cerrar sesión */}
@@ -189,9 +191,12 @@ export default function AdminHome() {
             setPassword('');
           }}
         >
-          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          <ScaledText style={styles.logoutButtonText}>Cerrar Sesión</ScaledText>
         </TouchableOpacity>
       </View>
+
+      {/* FAB de Accesibilidad */}
+      <AccessibilityFAB />
 
       {/* Modal para configurar tiempo de entrada */}
       <Modal
@@ -202,18 +207,18 @@ export default function AdminHome() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>⏰ Configurar Tiempo de Entrada</Text>
-            <Text style={styles.modalSubtitle}>
+            <ScaledText style={styles.modalTitle}>⏰ Configurar Tiempo de Entrada</ScaledText>
+            <ScaledText style={styles.modalSubtitle}>
               Define cuánto tiempo tendrán los asistentes para registrarse
-            </Text>
+            </ScaledText>
 
             <View style={styles.tiempoContainer}>
-              <Text style={styles.tiempoLabel}>Tiempo de entrada:</Text>
-              <Text style={styles.tiempoValor}>
+              <ScaledText style={styles.tiempoLabel}>Tiempo de entrada:</ScaledText>
+              <ScaledText style={styles.tiempoValor}>
                 {tiempoEntrada < 60 
                   ? `${tiempoEntrada} minutos` 
                   : `${(tiempoEntrada / 60).toFixed(1)} hora(s)`}
-              </Text>
+              </ScaledText>
             </View>
 
             {/* Slider con botones */}
@@ -226,7 +231,7 @@ export default function AdminHome() {
                 onPress={() => setTiempoEntrada(Math.max(30, tiempoEntrada - 15))}
                 disabled={tiempoEntrada <= 30}
               >
-                <Text style={styles.sliderButtonText}>−</Text>
+                <ScaledText style={styles.sliderButtonText}>−</ScaledText>
               </TouchableOpacity>
 
               <View style={styles.sliderTrack}>
@@ -246,7 +251,7 @@ export default function AdminHome() {
                 onPress={() => setTiempoEntrada(Math.min(120, tiempoEntrada + 15))}
                 disabled={tiempoEntrada >= 120}
               >
-                <Text style={styles.sliderButtonText}>+</Text>
+                <ScaledText style={styles.sliderButtonText}>+</ScaledText>
               </TouchableOpacity>
             </View>
 
@@ -259,10 +264,10 @@ export default function AdminHome() {
                 ]}
                 onPress={() => setTiempoEntrada(30)}
               >
-                <Text style={[
+                <ScaledText style={[
                   styles.quickOptionText,
                   tiempoEntrada === 30 && styles.quickOptionTextActive
-                ]}>30 min</Text>
+                ]}>30 min</ScaledText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -272,10 +277,10 @@ export default function AdminHome() {
                 ]}
                 onPress={() => setTiempoEntrada(60)}
               >
-                <Text style={[
+                <ScaledText style={[
                   styles.quickOptionText,
                   tiempoEntrada === 60 && styles.quickOptionTextActive
-                ]}>1 hora</Text>
+                ]}>1 hora</ScaledText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -285,10 +290,10 @@ export default function AdminHome() {
                 ]}
                 onPress={() => setTiempoEntrada(90)}
               >
-                <Text style={[
+                <ScaledText style={[
                   styles.quickOptionText,
                   tiempoEntrada === 90 && styles.quickOptionTextActive
-                ]}>1.5 horas</Text>
+                ]}>1.5 horas</ScaledText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -298,10 +303,10 @@ export default function AdminHome() {
                 ]}
                 onPress={() => setTiempoEntrada(120)}
               >
-                <Text style={[
+                <ScaledText style={[
                   styles.quickOptionText,
                   tiempoEntrada === 120 && styles.quickOptionTextActive
-                ]}>2 horas</Text>
+                ]}>2 horas</ScaledText>
               </TouchableOpacity>
             </View>
 
@@ -311,7 +316,7 @@ export default function AdminHome() {
                 style={styles.modalCancelButton}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.modalCancelButtonText}>Cancelar</Text>
+                <ScaledText style={styles.modalCancelButtonText}>Cancelar</ScaledText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -319,9 +324,9 @@ export default function AdminHome() {
                 onPress={crearAsamblea}
                 disabled={cargando}
               >
-                <Text style={styles.modalConfirmButtonText}>
+                <ScaledText style={styles.modalConfirmButtonText}>
                   {cargando ? 'Creando...' : 'Crear Asamblea'}
-                </Text>
+                </ScaledText>
               </TouchableOpacity>
             </View>
           </View>

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } fr
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 export default function Votacion() {
   const { asambleaId, asistenciaId } = useLocalSearchParams<{ asambleaId: string; asistenciaId?: string }>();
@@ -325,6 +326,7 @@ export default function Votacion() {
           </>
         )}
       </View>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

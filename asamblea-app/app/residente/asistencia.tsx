@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 export default function ResidenteAsistencia() {
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
@@ -176,6 +177,7 @@ export default function ResidenteAsistencia() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }

@@ -1,6 +1,8 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { ScaledText } from '@/src/components/ScaledText';
 
 export default function Home() {
   return (
@@ -17,35 +19,36 @@ export default function Home() {
           resizeMode="contain"
         />
 
-        <Text style={styles.title}>Altos del Guali</Text>
+        <ScaledText style={styles.title}>Altos del Guali</ScaledText>
 
         <TouchableOpacity
           onPress={() => router.push('/residente')}
           style={[styles.button, styles.primary]}
         >
-          <Text style={styles.buttonText}>Entrar como Residente</Text>
+          <ScaledText style={styles.buttonText}>Entrar como Residente</ScaledText>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => router.push('/admin')}
           style={[styles.button, styles.admin]}
         >
-          <Text style={styles.buttonText}>Entrar como Administrador</Text>
+          <ScaledText style={styles.buttonText}>Entrar como Administrador</ScaledText>
         </TouchableOpacity>
       </View>
 
       {/* PQRS ABAJO */}
       <View style={styles.footer}>
-        <Text style={styles.pqrsText}>¿Vienes por una solicitud o PQRS?</Text>
+        <ScaledText style={styles.pqrsText}>¿Vienes por una solicitud o PQRS?</ScaledText>
 
         <TouchableOpacity
           onPress={() => router.push('/pqrs')}
           style={[styles.button, styles.gray]}
         >
-          <Text style={styles.pqrsButtonText}>Ir a PQRS</Text>
+          <ScaledText style={styles.pqrsButtonText}>Ir a PQRS</ScaledText>
         </TouchableOpacity>
       </View>
     </View>
+    <AccessibilityFAB />
     </LinearGradient>
   );
 }

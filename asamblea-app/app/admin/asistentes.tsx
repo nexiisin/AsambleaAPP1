@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
+import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 
 type Asistente = {
   id: string;
@@ -248,6 +249,7 @@ export default function AdminAsistentes() {
           />
         )}
       </View>
+      <AccessibilityFAB />
     </LinearGradient>
   );
 }
