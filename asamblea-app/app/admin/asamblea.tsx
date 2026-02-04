@@ -185,6 +185,26 @@ export default function AdminAsamblea() {
     calcularTiempoRestante();
   }, [calcularTiempoRestante]);
 
+  const volverASalaEspera = async () => {
+    try {
+      // Limpiar propuesta activa y resultados para redirigir a todos a sala de espera
+      await supabase
+        .from('asambleas')
+        .update({
+          propuesta_activa_id: null,
+          propuesta_resultados_id: null,
+          estado_actual: 'ESPERA'
+        })
+        .eq('id', asambleaId);
+
+      Alert.alert('✅ Hecho', 'Todos los residentes han vuelto a la sala de espera');
+      cargarTodo();
+    } catch (e) {
+      console.error('Error al volver a sala de espera:', e);
+      Alert.alert('Error', 'Ocurrió un error');
+    }
+  };
+
   const cerrarAsamblea = async () => {
     setCerrandoAsamblea(true);
     try {
@@ -203,7 +223,7 @@ export default function AdminAsamblea() {
       setCerrarModalVisible(false);
       Alert.alert('✅ Asamblea cerrada', 'La asamblea se ha cerrado correctamente');
       cargarTodo();
-      router.back();
+      router.replace({ pathname: '/admin/asambleas' });
     } catch (e) {
       console.error(e);
       Alert.alert('Error', 'Ocurrió un error al cerrar la asamblea');
@@ -337,6 +357,12 @@ export default function AdminAsamblea() {
             text="📥 Descargar acta"
             color="#6366f1"
             onPress={() => Alert.alert('PDF', 'Aquí va el PDF')}
+          />
+
+          <Action
+            text="↩️ Volver a sala de espera"
+            color="#f59e0b"
+            onPress={volverASalaEspera}
           />
 
           <Action
