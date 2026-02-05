@@ -103,8 +103,11 @@ export default function AdminAsistentes() {
       .channel(`asistentes-${asambleaId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
-        () => cargarAsistentes()
+        { event: 'INSERT', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
+        (payload) => {
+          console.log('🔔 Nuevo asistente registrado, actualizando lista');
+          cargarAsistentes();
+        }
       )
       .subscribe();
 

@@ -171,18 +171,15 @@ export const descargarComprobanteAsistencia = async (
             </div>
 
             <div class="message">
-              Confirmamos que
-              <strong>${data.nombrePropietario} ${data.apellidoPropietario}</strong>
               ${
-                data.esApoderado
-                  ? ` asistió como apoderado${
-                      data.casaRepresentada
-                        ? ` representando la casa ${data.casaRepresentada}`
-                        : ''
-                    }`
-                  : ' asistió'
+                data.esApoderado && data.casaRepresentada
+                  ? `
+                Confirmamos que <strong>${data.nombreAsistente}</strong> asistió en nombre de la casa <strong>${data.numeroCasa}</strong> y adicional como apoderado de la casa <strong>${data.casaRepresentada}</strong> a la asamblea de residentes el ${fechaFormato}. Este comprobante certifica su participación en el proceso.
+              `
+                  : `
+                Confirmamos que <strong>${data.nombreAsistente}</strong> asistió en nombre de la casa <strong>${data.numeroCasa}</strong> a la asamblea de residentes el ${fechaFormato}. Este comprobante certifica su participación en el proceso.
+              `
               }
-              a la asamblea de residentes el ${fechaFormato}. Este documento sirve como comprobante de su participación en la reunión.
             </div>
 
             <div class="signature">

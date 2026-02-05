@@ -126,8 +126,11 @@ export default function Cronometro() {
       .channel(`asistencias-quorum-crono-${asambleaId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
-        () => cargarQuorum()
+        { event: 'INSERT', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
+        () => {
+          console.log('📊 Nueva asistencia en cronometro, recargando quórum');
+          cargarQuorum();
+        }
       )
       .subscribe();
 

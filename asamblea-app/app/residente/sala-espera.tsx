@@ -32,7 +32,7 @@ export default function SalaEspera() {
   const [scaleAnim] = useState(new Animated.Value(0.8));
   const [tiempoRestante, setTiempoRestante] = useState('');
   const [ingresoCerrado, setIngresoCerrado] = useState(false);
-  const [mostrarModalAdvertencia, setMostrarModalAdvertencia] = useState(true);
+  const [mostrarModalAdvertencia, setMostrarModalAdvertencia] = useState(!fromResults);
 
   // Estados del quórum
   const [totalViviendas, setTotalViviendas] = useState<number | null>(null);
@@ -48,6 +48,8 @@ export default function SalaEspera() {
   // Ref para evitar redirecciones infinitas
   const lastPropuestaResultadosId = useRef<string | null>(null);
   const fromResultsProcessed = useRef(false);
+  const lastPropuestaActiveRef = useRef<string | null>(null);
+  const lastPropuestaResultadosRefRealtime = useRef<string | null>(null);
 
   useEffect(() => {
     // Animación de entrada
@@ -172,7 +174,7 @@ export default function SalaEspera() {
     // Verificar cada segundo
     const timer = setInterval(verificarEstado, 1000);
 
-    // Suscripción a cambios en la asamblea
+    // Suscripción a cambios en la asamblea (solo cambios relevantes)
     const subscription = supabase
       .channel('sala-espera')
       .on(
@@ -184,8 +186,16 @@ export default function SalaEspera() {
           filter: `id=eq.${asambleaId}`,
         },
         (payload) => {
-          console.log('🔔 Cambio detectado en asamblea:', payload);
-          verificarEstado();
+          const newPropActiva = payload.new?.propuesta_activa_id;
+          const newPropResultados = payload.new?.propuesta_resultados_id;
+          
+          // Solo recargar si cambió propuesta_activa_id o propuesta_resultados_id
+          if (newPropActiva !== lastPropuestaActiveRef.current || newPropResultados !== lastPropuestaResultadosRefRealtime.current) {
+            lastPropuestaActiveRef.current = newPropActiva;
+            lastPropuestaResultadosRefRealtime.current = newPropResultados;
+            console.log('🔔 Cambio detectado en propuesta activa/resultados:', { newPropActiva, newPropResultados });
+            verificarEstado();
+          }
         }
       )
       .subscribe((status) => {
@@ -203,6 +213,14 @@ export default function SalaEspera() {
           }
         } catch (e) {
           console.error('Error redirigiendo a asistencia:', e);
+        }
+      })
+      .on('broadcast', { event: 'mostrar-formulario-salida' }, (payload) => {
+        try {
+          console.log('📋 Admin mostró formulario de salida');
+          router.push({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
+        } catch (e) {
+          console.error('Error redirigiendo a formulario de salida:', e);
         }
       })
       .subscribe();
@@ -255,8 +273,11 @@ export default function SalaEspera() {
       .channel(`asistencias-quorum-${asambleaId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
-        () => cargarQuorum()
+        { event: 'INSERT', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
+        () => {
+          console.log('📊 Nueva asistencia registrada, recargando quórum');
+          cargarQuorum();
+        }
       )
       .subscribe();
 

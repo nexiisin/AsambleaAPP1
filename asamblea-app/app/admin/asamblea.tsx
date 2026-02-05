@@ -45,6 +45,7 @@ export default function AdminAsamblea() {
   const [cerrarModalVisible, setCerrarModalVisible] = useState(false);
   const [cerrandoAsamblea, setCerrandoAsamblea] = useState(false);
   const [codigoModalVisible, setCodigoModalVisible] = useState(false);
+  const [formularioSalidaModalVisible, setFormularioSalidaModalVisible] = useState(false);
 
   const cargarTodo = useCallback(async () => {
     if (!asambleaId) return;
@@ -170,40 +171,27 @@ export default function AdminAsamblea() {
       )
       .subscribe();
 
-    // Suscripción a cambios en asistencias
+    // Suscripción a cambios en asistencias (solo nuevas entradas, no salidas)
     const asistenciasSubscription = supabase
       .channel('asistencias-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'asistencias',
           filter: `asamblea_id=eq.${asambleaId}`,
         },
         (payload) => {
-          console.log('Cambio en asistencias:', payload);
+          console.log('🆕 Nueva asistencia registrada:', payload);
           cargarTodo();
         }
       )
       .subscribe();
 
-    // Suscripción a cambios en votos (para actualizar propuestas)
-    const votosSubscription = supabase
-      .channel('votos-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'votos',
-        },
-        (payload) => {
-          console.log('Cambio en votos:', payload);
-          cargarTodo();
-        }
-      )
-      .subscribe();
+    // Suscripción a cambios en votos deshabilitada para evitar recargas en cascada
+    // Los conteos de votos se actualizan mediante triggers sin notificar al admin en tiempo real
+    const votosSubscription = null;
 
     // Timer para actualizar el contador de tiempo
     const timer = setInterval(() => {
@@ -216,7 +204,7 @@ export default function AdminAsamblea() {
       supabase.removeChannel(asambleasSubscription);
       supabase.removeChannel(propuestasSubscription);
       supabase.removeChannel(asistenciasSubscription);
-      supabase.removeChannel(votosSubscription);
+      if (votosSubscription) supabase.removeChannel(votosSubscription);
     };
   }, [asambleaId, cargarTodo, calcularTiempoRestante]);
 
@@ -251,6 +239,26 @@ export default function AdminAsamblea() {
       console.error(e);
       Alert.alert('Error', 'Ocurrió un error al cerrar la asamblea');
       setCerrandoAsamblea(false);
+    }
+  };
+
+  const mostrarFormularioSalida = async () => {
+    if (!asambleaId) return;
+    
+    try {
+      const chName = `asamblea-broadcast-${asambleaId}`;
+      const channel = supabase.channel(chName);
+      await channel.send({ 
+        type: 'broadcast', 
+        event: 'mostrar-formulario-salida', 
+        payload: { asambleaId } 
+      });
+      
+      setFormularioSalidaModalVisible(false);
+      Alert.alert('✅ Enviado', 'Se ha enviado el formulario de salida a todos los residentes');
+    } catch (e) {
+      console.error('Error enviando formulario de salida:', e);
+      Alert.alert('Error', 'No se pudo enviar el formulario de salida');
     }
   };
 
@@ -458,6 +466,14 @@ export default function AdminAsamblea() {
           </View>
         </View>
 
+        {/* BOTÓN FORMULARIO DE SALIDA */}
+        <TouchableOpacity
+          style={[styles.closeAssemblyBtn, isDesktop && styles.closeAssemblyBtnDesktop, { backgroundColor: '#f97316' }]}
+          onPress={() => setFormularioSalidaModalVisible(true)}
+        >
+          <Text style={[styles.closeAssemblyBtnText, isDesktop && styles.closeAssemblyBtnTextDesktop, dynamicStyles.closeAssemblyBtnText, isDesktop && dynamicStyles.closeAssemblyBtnTextDesktop]}>📋 Formulario de salida</Text>
+        </TouchableOpacity>
+
         {/* BOTÓN CERRAR ASAMBLEA */}
         <TouchableOpacity
           style={[styles.closeAssemblyBtn, isDesktop && styles.closeAssemblyBtnDesktop]}
@@ -559,6 +575,56 @@ export default function AdminAsamblea() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de confirmación para formulario de salida */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={formularioSalidaModalVisible}
+        onRequestClose={() => setFormularioSalidaModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <View style={styles.confirmModalHeader}>
+              <Text style={styles.confirmModalIcon}>📋</Text>
+              <Text style={styles.confirmModalTitle}>¿Mostrar formulario de salida?</Text>
+            </View>
+            
+            <Text style={styles.confirmModalMessage}>
+              Se les mostrará a todos el formulario de asistencia y saldrán de la asamblea.
+            </Text>
+
+            <View style={styles.confirmModalStats}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Residentes conectados</Text>
+                <Text style={styles.confirmStatValue}>{totalAsistentes}</Text>
+              </View>
+            </View>
+
+            <Text style={styles.confirmModalWarning}>
+              ⚠️ Todos los residentes podrán rellenar el formulario de salida
+            </Text>
+
+            <View style={styles.confirmModalButtons}>
+              <TouchableOpacity
+                style={styles.confirmCancelButton}
+                onPress={() => setFormularioSalidaModalVisible(false)}
+              >
+                <Text style={styles.confirmCancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.confirmDeleteButton, { backgroundColor: '#f97316' }]}
+                onPress={mostrarFormularioSalida}
+              >
+                <Text style={styles.confirmDeleteButtonText}>
+                  ✅ Sí, mostrar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <AccessibilityFAB />
     </LinearGradient>
   );
@@ -601,10 +667,11 @@ function AsistenciaModal({ visible, onClose, asambleaId }: any) {
 
     cargar();
 
-    // Suscripción realtime para actualizar contador
+    // Suscripción realtime para actualizar contador (solo nuevas entradas, no salidas)
     const channel = supabase
       .channel('asistencias-modal')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` }, (payload) => {
+        console.log('📈 Nueva asistencia, incrementando contador');
         // recargar conteos
         (async () => {
           const { count } = await supabase

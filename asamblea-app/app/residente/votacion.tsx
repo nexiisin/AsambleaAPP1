@@ -79,7 +79,7 @@ export default function Votacion() {
     }
   }, [asambleaId, asistenciaId]);
 
-  const lastUpdateRef = useRef<number>(0);
+  const lastPropuestaIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Cargar vivienda desde asistencia si se pasa asistenciaId
@@ -123,35 +123,39 @@ export default function Votacion() {
     cargarAsistencia();
     cargarPropuestaActiva();
 
-    // Suscribirse a actualizaciones de propuestas y asambleas
+    // Suscribirse a actualizaciones de asambleas (solo para detectar cuando se publican resultados)
     const channel = supabase
       .channel(`propuestas-residente-${asambleaId}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'propuestas', filter: `asamblea_id=eq.${asambleaId}` },
-        () => {
-          const now = Date.now();
-          if (now - (lastUpdateRef.current || 0) > 800) {
-            lastUpdateRef.current = now;
-            cargarPropuestaActiva();
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'asambleas', filter: `id=eq.${asambleaId}` },
-        () => {
-          const now = Date.now();
-          if (now - (lastUpdateRef.current || 0) > 800) {
-            lastUpdateRef.current = now;
+        (payload) => {
+          // Solo recargar si cambió propuesta_resultados_id o propuesta_activa_id
+          const newResultadosId = payload.new?.propuesta_resultados_id;
+          if (newResultadosId) {
+            console.log('📊 Resultados publicados, recargan datos');
             cargarPropuestaActiva();
           }
         }
       )
       .subscribe();
 
+    // Broadcast para formulario de salida
+    const broadcastChannel = supabase
+      .channel(`asamblea-broadcast-${asambleaId}`)
+      .on('broadcast', { event: 'mostrar-formulario-salida' }, (payload) => {
+        try {
+          console.log('📋 Admin mostró formulario de salida');
+          router.push({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
+        } catch (e) {
+          console.error('Error redirigiendo a formulario de salida:', e);
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(broadcastChannel);
     };
   }, [asistenciaId, asambleaId, cargarPropuestaActiva]);
 
