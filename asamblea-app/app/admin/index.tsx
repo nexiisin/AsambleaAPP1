@@ -22,12 +22,6 @@ import { useResponsive } from '@/src/hooks/useResponsive';
 
 const PANEL_WIDTH = 520;
 
-// Credenciales hardcodeadas
-const CREDENCIALES = [
-  { usuario: 'Admin', password: 'Altosdelguali2026' },
-  { usuario: 'Administrador', password: 'Altosdelguali2026' },
-];
-
 export default function AdminHome() {
   const { isDesktop } = useResponsive();
   const [autenticado, setAutenticado] = useState(false);
@@ -39,16 +33,37 @@ export default function AdminHome() {
   const [modalVisible, setModalVisible] = useState(false);
   const [tiempoEntrada, setTiempoEntrada] = useState(60); // Tiempo en minutos (por defecto 1 hora)
 
-  // Validar credenciales
-  const iniciarSesion = () => {
-    const credencialValida = CREDENCIALES.find(
-      (cred) => cred.usuario === usuario && cred.password === password
-    );
+  // Validar credenciales contra Supabase
+  const iniciarSesion = async () => {
+    if (!usuario.trim() || !password.trim()) {
+      Alert.alert('Error', 'Por favor ingresa usuario y contraseña');
+      return;
+    }
 
-    if (credencialValida) {
+    setCargando(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('administradores')
+        .select('*')
+        .eq('usuario', usuario)
+        .eq('password', password)
+        .eq('activo', true)
+        .single();
+
+      setCargando(false);
+
+      if (error || !data) {
+        Alert.alert('Error', 'Usuario o contraseña incorrectos');
+        return;
+      }
+
+      // Credenciales válidas
       setAutenticado(true);
-    } else {
-      Alert.alert('Error', 'Usuario o contraseña incorrectos');
+    } catch (e) {
+      setCargando(false);
+      Alert.alert('Error', 'Ocurrió un error al iniciar sesión');
+      console.error('Error en login:', e);
     }
   };
 
@@ -134,10 +149,13 @@ export default function AdminHome() {
               />
 
               <TouchableOpacity
-                style={styles.loginButton}
+                style={[styles.loginButton, cargando && styles.loginButtonDisabled]}
                 onPress={iniciarSesion}
+                disabled={cargando}
               >
-                <ScaledText style={styles.loginButtonText}>Iniciar Sesión</ScaledText>
+                <ScaledText style={styles.loginButtonText}>
+                  {cargando ? 'Verificando...' : 'Iniciar Sesión'}
+                </ScaledText>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -464,6 +482,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 16,
+  } as ViewStyle,
+
+  loginButtonDisabled: {
+    backgroundColor: '#9ca3af',
+    opacity: 0.7,
   } as ViewStyle,
 
   loginButtonText: {
