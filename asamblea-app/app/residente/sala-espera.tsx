@@ -92,6 +92,15 @@ export default function SalaEspera() {
 
       setAsamblea(asambleaData);
       
+      // Guardar refs para el contador local (inicialización)
+      crieroCierreIngresoRef.current = asambleaData.hora_cierre_ingreso;
+      crieroCronometroRef.current = {
+        activo: asambleaData.cronometro_activo,
+        pausado: asambleaData.cronometro_pausado,
+        inicio: asambleaData.cronometro_inicio,
+        duracion: asambleaData.cronometro_duracion_segundos,
+      };
+      
       // Redirigir automáticamente si hay propuesta activa (votación)
       if (asambleaData.propuesta_activa_id) {
         console.log('➡️ Redirigiendo a votación');

@@ -48,7 +48,7 @@ export default function AdminResultados() {
 
   const cargarEstadisticas = async (propuestaId: string) => {
     try {
-      const totalCasas = 146; // Total de casas en la base de datos
+      const totalCasas = 164; // Total de casas en la base de datos
       console.log('📊 Total casas configurado:', totalCasas);
 
       // OPTIMIZACIÓN Priority 3.2: Usar RPC en lugar de 3 queries separadas

@@ -74,7 +74,7 @@ export default function Resultados() {
       console.log('📄 Propuesta cargada:', propData);
       setPropuesta(propData);
 
-      const totalCasas = 15; // Total de casas en la base de datos
+      const totalCasas = 164; // Total de casas en la base de datos
       console.log('📊 (Residente) Total casas configurado:', totalCasas);
 
       // Obtener votos SI
