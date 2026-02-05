@@ -168,63 +168,40 @@ export default function Votacion() {
 
     setVoting(true);
     try {
-      // Evitar duplicados: verificar si ya existe un voto para esta vivienda y propuesta
-      const { data: existing } = await supabase
-        .from('votos')
-        .select('id')
-        .eq('propuesta_id', propuesta.id)
-        .eq('vivienda_id', viviendaId)
-        .limit(1);
+      // OPTIMIZACIÓN: Usar RPC function en lugar de 3 queries separadas
+      // Esto reduce 3 queries × 164 usuarios = 492 queries a 164 RPC calls
+      
+      const { data, error } = await supabase.rpc('registrar_voto', {
+        p_propuesta_id: propuesta.id,
+        p_vivienda_id: viviendaId,
+        p_asistencia_id: asistenciaId,
+        p_tipo_voto: tipo,
+        p_casa_representada_id: esApoderadoAprobado ? casaRepresentadaId : null,
+      });
 
-      if (existing && existing.length > 0) {
-        setVoted(true);
+      if (error) {
+        console.error('Error registrando voto:', error);
+        
+        // Si el error es "Ya existe un voto", no mostrar alerta
+        if (error.message?.includes('voto')) {
+          setVoted(true);
+        } else {
+          Alert.alert('❌ Error', 'No se pudo registrar tu voto. Intenta nuevamente.');
+        }
         setVoting(false);
         return;
       }
 
-      // Preparar los votos a insertar
-      const votos = [
-        {
-          propuesta_id: propuesta.id,
-          vivienda_id: viviendaId,
-          asistencia_id: asistenciaId,
-          tipo_voto: tipo,
-        }
-      ];
-
-      // Si es apoderado aprobado, agregar voto para la casa representada
-      if (esApoderadoAprobado && casaRepresentadaId) {
-        // Verificar que no haya voto previo para la casa representada tampoco
-        const { data: existingCasaRep } = await supabase
-          .from('votos')
-          .select('id')
-          .eq('propuesta_id', propuesta.id)
-          .eq('vivienda_id', casaRepresentadaId)
-          .limit(1);
-
-        if (!existingCasaRep || existingCasaRep.length === 0) {
-          votos.push({
-            propuesta_id: propuesta.id,
-            vivienda_id: casaRepresentadaId,
-            asistencia_id: asistenciaId,
-            tipo_voto: tipo,
-          });
-          console.log('🗳️ Apoderado votando con dos viviendas:', viviendaId, casaRepresentadaId);
-        }
-      }
-
-      // Insertar todos los votos
-      const { error } = await supabase.from('votos').insert(votos);
-
-      if (error) {
-        console.error('Error insertando voto:', error);
-        Alert.alert('❌ Error', 'No se pudo registrar tu voto. Intenta nuevamente.');
-      } else {
-        // Marcar localmente como votado para mostrar el mensaje bonito
+      if (data?.success) {
         setVoted(true);
         if (esApoderadoAprobado && casaRepresentadaId) {
-          console.log('✅ Voto registrado para ambas viviendas');
+          console.log('✅ Voto registrado para ambas viviendas (via RPC)');
+        } else {
+          console.log('✅ Voto registrado (via RPC)');
         }
+      } else {
+        console.error('Error RPC:', data?.error);
+        Alert.alert('Error', data?.error || 'No se pudo registrar el voto');
       }
     } catch (e) {
       console.error('Error enviando voto:', e);

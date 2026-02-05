@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Alert,
   ScrollView,
@@ -46,6 +46,7 @@ export default function AdminAsamblea() {
   const [cerrandoAsamblea, setCerrandoAsamblea] = useState(false);
   const [codigoModalVisible, setCodigoModalVisible] = useState(false);
   const [formularioSalidaModalVisible, setFormularioSalidaModalVisible] = useState(false);
+  const debounceTimeoutRef = useRef<number | null>(null);
 
   const cargarTodo = useCallback(async () => {
     if (!asambleaId) return;
@@ -171,7 +172,7 @@ export default function AdminAsamblea() {
       )
       .subscribe();
 
-    // Suscripción a cambios en asistencias (solo nuevas entradas, no salidas)
+    // Suscripción a cambios en asistencias (debounced para evitar cascada de 164 queries)
     const asistenciasSubscription = supabase
       .channel('asistencias-changes')
       .on(
@@ -183,8 +184,15 @@ export default function AdminAsamblea() {
           filter: `asamblea_id=eq.${asambleaId}`,
         },
         (payload) => {
-          console.log('🆕 Nueva asistencia registrada:', payload);
-          cargarTodo();
+          console.log('🆕 Nueva asistencia registrada, debouncing...');
+          // OPTIMIZACIÓN Priority 3.1: Debounce para evitar 164 recargas simultáneas
+          if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+          }
+          debounceTimeoutRef.current = setTimeout(() => {
+            cargarTodo();
+            debounceTimeoutRef.current = null;
+          }, 1000) as unknown as number;
         }
       )
       .subscribe();
@@ -201,6 +209,7 @@ export default function AdminAsamblea() {
     // Cleanup
     return () => {
       clearInterval(timer);
+      if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
       supabase.removeChannel(asambleasSubscription);
       supabase.removeChannel(propuestasSubscription);
       supabase.removeChannel(asistenciasSubscription);

@@ -50,6 +50,10 @@ export default function SalaEspera() {
   const fromResultsProcessed = useRef(false);
   const lastPropuestaActiveRef = useRef<string | null>(null);
   const lastPropuestaResultadosRefRealtime = useRef<string | null>(null);
+  
+  // Refs para contador local (sin queries a BD)
+  const crieroCierreIngresoRef = useRef<string | null>(null);
+  const crieroCronometroRef = useRef<{ activo: boolean; pausado: boolean; inicio: string; duracion: number } | null>(null);
 
   useEffect(() => {
     // Animación de entrada
@@ -171,8 +175,33 @@ export default function SalaEspera() {
     // Verificar inmediatamente
     verificarEstado();
 
-    // Verificar cada segundo
-    const timer = setInterval(verificarEstado, 1000);
+    // Contador local SOLO para actualizar las UI (sin queries a BD)
+    const timerLocal = setInterval(() => {
+      // Actualizar tiempo de ingreso restante (cálculo local)
+      if (crieroCierreIngresoRef.current) {
+        const ahora = new Date();
+        const horaCierre = new Date(crieroCierreIngresoRef.current);
+
+        if (ahora >= horaCierre) {
+          setIngresoCerrado(true);
+          setTiempoRestante('');
+        } else {
+          const diffMs = horaCierre.getTime() - ahora.getTime();
+          const diffMin = Math.floor(diffMs / 60000);
+          const diffSeg = Math.floor((diffMs % 60000) / 1000);
+          setTiempoRestante(`${diffMin}:${diffSeg.toString().padStart(2, '0')}`);
+        }
+      }
+
+      // Actualizar cronómetro si está activo (cálculo local)
+      if (crieroCronometroRef.current && crieroCronometroRef.current.activo && !crieroCronometroRef.current.pausado) {
+        const ahora = Date.now();
+        const inicio = new Date(crieroCronometroRef.current.inicio).getTime();
+        const transcurrido = Math.floor((ahora - inicio) / 1000);
+        const restante = Math.max(0, crieroCronometroRef.current.duracion - transcurrido);
+        setSegundosRestantes(restante);
+      }
+    }, 1000);
 
     // Suscripción a cambios en la asamblea (solo cambios relevantes)
     const subscription = supabase
@@ -188,6 +217,15 @@ export default function SalaEspera() {
         (payload) => {
           const newPropActiva = payload.new?.propuesta_activa_id;
           const newPropResultados = payload.new?.propuesta_resultados_id;
+          
+          // Guardar refs para el contador local
+          crieroCierreIngresoRef.current = payload.new?.hora_cierre_ingreso;
+          crieroCronometroRef.current = {
+            activo: payload.new?.cronometro_activo,
+            pausado: payload.new?.cronometro_pausado,
+            inicio: payload.new?.cronometro_inicio,
+            duracion: payload.new?.cronometro_duracion_segundos,
+          };
           
           // Solo recargar si cambió propuesta_activa_id o propuesta_resultados_id
           if (newPropActiva !== lastPropuestaActiveRef.current || newPropResultados !== lastPropuestaResultadosRefRealtime.current) {
@@ -226,7 +264,7 @@ export default function SalaEspera() {
       .subscribe();
 
     return () => {
-      clearInterval(timer);
+      clearInterval(timerLocal);
       supabase.removeChannel(subscription);
       supabase.removeChannel(broadcastChannel);
     };

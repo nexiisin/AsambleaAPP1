@@ -67,20 +67,34 @@ export const descargarActaAsamblea = async (asambleaId: string) => {
 
     if (errorPropuestas) throw new Error('Error cargando propuestas');
 
-    // 6. Obtener votos para cada propuesta
-    const propuestasConVotos = await Promise.all(
-      (propuestas || []).map(async (prop) => {
-        const { data: votos } = await supabase
-          .from('votos')
-          .select('*')
-          .eq('propuesta_id', prop.id);
+    // 6. OPTIMIZACIÓN Priority 3.3: Obtener todos los votos en 1 query (NO Promise.all loop)
+    // Antes: 10 propuestas = 10 queries paralelas
+    // Ahora: 1 query con IN clause
+    const propuestaIds = propuestas?.map(p => p.id) || [];
+    let votosPorPropuesta = new Map<string, any[]>();
 
-        return {
-          ...prop,
-          votos: votos || [],
-        };
-      })
-    );
+    if (propuestaIds.length > 0) {
+      const { data: todosLosVotos, error: errorVotos } = await supabase
+        .from('votos')
+        .select('*')
+        .in('propuesta_id', propuestaIds);
+
+      if (errorVotos) throw new Error('Error cargando votos');
+
+      // Agrupar votos por propuesta localmente (sin queries adicionales)
+      todosLosVotos?.forEach(voto => {
+        if (!votosPorPropuesta.has(voto.propuesta_id)) {
+          votosPorPropuesta.set(voto.propuesta_id, []);
+        }
+        votosPorPropuesta.get(voto.propuesta_id)!.push(voto);
+      });
+    }
+
+    // Crear propuestas con votos asignados
+    const propuestasConVotos = (propuestas || []).map(prop => ({
+      ...prop,
+      votos: votosPorPropuesta.get(prop.id) || [],
+    }));
 
     // 7. Calcular estadísticas
     const apoderados = (asistencias || []).filter(a => a.es_apoderado);

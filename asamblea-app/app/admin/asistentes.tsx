@@ -35,6 +35,7 @@ export default function AdminAsistentes() {
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
   const broadcastChannelRef = useRef<any>(null);
+  const debounceTimeoutRef = useRef<number | null>(null);
 
   const cargarAsistentes = async () => {
     if (!asambleaId) return;
@@ -42,32 +43,22 @@ export default function AdminAsistentes() {
     try {
       setCargando(true);
 
+      // Query optimizada CON JOIN: obtener asistencias + datos de vivienda en 1 query
       const { data: asistencias, error: errorAsistencias } = await supabase
         .from('asistencias')
         .select(
-          'id, nombre_asistente, vivienda_id, fecha_registro, es_apoderado, casa_representada, estado_apoderado'
+          'id, nombre_asistente, vivienda_id, fecha_registro, es_apoderado, casa_representada, estado_apoderado, viviendas(numero_casa)'
         )
         .eq('asamblea_id', asambleaId)
         .order('fecha_registro', { ascending: false });
 
       if (errorAsistencias) throw errorAsistencias;
 
-      const viviendaIds = (asistencias || []).map(a => a.vivienda_id);
-      const { data: viviendas, error: errorViviendas } = await supabase
-        .from('viviendas')
-        .select('id, numero_casa')
-        .in('id', viviendaIds.length ? viviendaIds : ['00000000-0000-0000-0000-000000000000']);
-
-      if (errorViviendas) throw errorViviendas;
-
-      const viviendaMap = new Map<string, string>();
-      (viviendas || []).forEach((v: any) => viviendaMap.set(v.id, v.numero_casa));
-
       const asistentesConCasa: Asistente[] = (asistencias || []).map((a: any) => ({
         id: a.id,
         nombre_asistente: a.nombre_asistente,
         vivienda_id: a.vivienda_id,
-        numero_casa: viviendaMap.get(a.vivienda_id) || 'N/A',
+        numero_casa: a.viviendas?.numero_casa || 'N/A',
         fecha_registro: a.fecha_registro ?? null,
         es_apoderado: !!a.es_apoderado,
         casa_representada: a.casa_representada ?? null,
@@ -96,6 +87,53 @@ export default function AdminAsistentes() {
     }
   };
 
+  // Agregar dinámicamente sin recargar todo
+  const agregarAsistenteAlista = async (asistenciaId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('asistencias')
+        .select('id, nombre_asistente, vivienda_id, fecha_registro, es_apoderado, casa_representada, estado_apoderado, viviendas(numero_casa)')
+        .eq('id', asistenciaId)
+        .single();
+
+      if (error || !data) return;
+
+      const nuevoAsistente: Asistente = {
+        id: data.id,
+        nombre_asistente: data.nombre_asistente,
+        vivienda_id: data.vivienda_id,
+        numero_casa: (data as any).viviendas?.numero_casa || 'N/A',
+        fecha_registro: data.fecha_registro,
+        es_apoderado: !!data.es_apoderado,
+        casa_representada: data.casa_representada ?? null,
+        estado_apoderado: data.estado_apoderado ?? null,
+      };
+
+      setAsistentes(prev => [nuevoAsistente, ...prev]);
+      
+      // Actualizar conteo total
+      setTotalAsistentes(prev => {
+        let nueva = prev + 1;
+        if (nuevoAsistente.es_apoderado && nuevoAsistente.estado_apoderado === 'APROBADO') {
+          nueva += 1;
+        }
+        return nueva;
+      });
+    } catch (e) {
+      console.error('Error agregando asistente:', e);
+    }
+  };
+
+  // Debounce para recargas completas (en caso de cambios de estado)
+  const cargarAsistentesDebounced = () => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = setTimeout(() => {
+      cargarAsistentes();
+    }, 2000); // Esperar 2 segundos antes de recargar
+  };
+
   useEffect(() => {
     cargarAsistentes();
 
@@ -105,8 +143,18 @@ export default function AdminAsistentes() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
         (payload) => {
-          console.log('🔔 Nuevo asistente registrado, actualizando lista');
-          cargarAsistentes();
+          console.log('🔔 Nuevo asistente registrado, agregando a lista');
+          // Agregar dinámicamente en lugar de recargar todo
+          agregarAsistenteAlista(payload.new.id);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'asistencias', filter: `asamblea_id=eq.${asambleaId}` },
+        (payload) => {
+          console.log('🔄 Estado de asistente actualizado, recargando en 2s');
+          // Solo recargar cuando hay cambios de estado (con debounce)
+          cargarAsistentesDebounced();
         }
       )
       .subscribe();
@@ -119,6 +167,9 @@ export default function AdminAsistentes() {
       supabase.removeChannel(channel);
       if (broadcastChannelRef.current) {
         supabase.removeChannel(broadcastChannelRef.current);
+      }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
       }
     };
   }, [asambleaId]);

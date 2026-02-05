@@ -48,22 +48,25 @@ export default function AdminResultados() {
 
   const cargarEstadisticas = async (propuestaId: string) => {
     try {
-      const totalCasas = 15; // Total de casas en la base de datos
+      const totalCasas = 146; // Total de casas en la base de datos
       console.log('📊 Total casas configurado:', totalCasas);
 
-      // Obtener votos SI
-      const { count: votosSi } = await supabase
-        .from('votos')
-        .select('*', { count: 'exact', head: true })
-        .eq('propuesta_id', propuestaId)
-        .eq('tipo_voto', 'SI');
+      // OPTIMIZACIÓN Priority 3.2: Usar RPC en lugar de 3 queries separadas
+      // Antes: COUNT votos SI + COUNT votos NO + SELECT asistencias = 3 queries
+      // Ahora: 1 RPC call obtener_estadisticas_propuesta()
+      
+      const { data: statsData, error: statsError } = await supabase.rpc(
+        'obtener_estadisticas_propuesta',
+        { p_propuesta_id: propuestaId }
+      );
 
-      // Obtener votos NO
-      const { count: votosNo } = await supabase
-        .from('votos')
-        .select('*', { count: 'exact', head: true })
-        .eq('propuesta_id', propuestaId)
-        .eq('tipo_voto', 'NO');
+      if (statsError) {
+        console.error('Error obteniendo estadísticas:', statsError);
+        return;
+      }
+
+      const votosSi = statsData?.votos_si || 0;
+      const votosNo = statsData?.votos_no || 0;
 
       // Obtener asistencias (incluyendo apoderados)
       const { data: asistenciasData } = await supabase
@@ -86,7 +89,7 @@ export default function AdminResultados() {
       
       const asistentes = viviendasRepresentadas.size;
 
-      const totalVotos = (votosSi || 0) + (votosNo || 0);
+      const totalVotos = votosSi + votosNo;
       const noVotaron = Math.max(0, (asistentes || 0) - totalVotos);
       const noAsistentes = Math.max(0, totalCasas - (asistentes || 0));
 
