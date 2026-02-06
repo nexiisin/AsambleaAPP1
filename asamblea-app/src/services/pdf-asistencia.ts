@@ -197,15 +197,15 @@ export const descargarComprobanteAsistencia = async (
       </html>
     `;
 
-    const result = await Print.printAsync({
+    const { uri } = await Print.printToFileAsync({
       html: htmlContent,
     });
 
-    if (!result?.uri) {
+    if (!uri) {
       throw new Error('No se pudo generar el PDF');
     }
 
-    await shareAsync(result.uri, {
+    await shareAsync(uri, {
       mimeType: 'application/pdf',
       filename: `Comprobante_Asistencia_${data.numeroCasa}_${Date.now()}.pdf`,
     });

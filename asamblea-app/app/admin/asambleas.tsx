@@ -45,6 +45,9 @@ export default function AsambleasList() {
       style={styles.page}
     >
       <View style={[styles.panel, { maxWidth: PANEL_WIDTH }]}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>← Volver</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>Asambleas existentes</Text>
 
         {asambleas.length === 0 ? (
@@ -99,6 +102,19 @@ const styles = StyleSheet.create({
     paddingTop: 32,
     paddingHorizontal: 16,
     flex: 1,
+  },
+
+  backButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    marginBottom: 16,
+    alignSelf: 'flex-start',
+  },
+
+  backButtonText: {
+    color: '#065f46',
+    fontWeight: '600',
+    fontSize: 15,
   },
 
   title: {

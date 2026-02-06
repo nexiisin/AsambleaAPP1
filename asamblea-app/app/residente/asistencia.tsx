@@ -130,27 +130,27 @@ export default function ResidenteAsistencia() {
           fecha: new Date().toISOString(),
         });
 
-        // Mostrar mensaje de confirmación
+        // Mostrar mensaje de confirmación y redirigir a pantalla principal
         Alert.alert(
           '✅ Salida Registrada',
           'Tu comprobante de asistencia ha sido descargado. ¡Gracias por acompañarnos en la asamblea!',
           [
             {
               text: 'Aceptar',
-              onPress: () => router.replace({ pathname: '/residente' }),
+              onPress: () => router.replace('/'),
             }
           ]
         );
       } catch (pdfError) {
         console.error('Error descargando comprobante:', pdfError);
-        // Si falla el PDF, igualmente sacar al usuario
+        // Si falla el PDF, igualmente sacar al usuario a la pantalla principal
         Alert.alert(
           '✅ Salida Registrada',
           'Tu salida ha sido registrada correctamente. ¡Gracias por acompañarnos en la asamblea!',
           [
             {
               text: 'Aceptar',
-              onPress: () => router.replace({ pathname: '/residente' }),
+              onPress: () => router.replace('/'),
             }
           ]
         );

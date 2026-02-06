@@ -46,6 +46,9 @@ export default function AdminAsamblea() {
   const [cerrandoAsamblea, setCerrandoAsamblea] = useState(false);
   const [codigoModalVisible, setCodigoModalVisible] = useState(false);
   const [formularioSalidaModalVisible, setFormularioSalidaModalVisible] = useState(false);
+  const [formularioSalidaEnviado, setFormularioSalidaEnviado] = useState(false);
+  const [totalConectadosSalida, setTotalConectadosSalida] = useState(0);
+  const [totalSalidasCompletadas, setTotalSalidasCompletadas] = useState(0);
   const debounceTimeoutRef = useRef<number | null>(null);
 
   const cargarTodo = useCallback(async () => {
@@ -217,6 +220,80 @@ export default function AdminAsamblea() {
     };
   }, [asambleaId, cargarTodo, calcularTiempoRestante]);
 
+  // Effect para cargar datos de salida cuando se abre el modal
+  useEffect(() => {
+    if (!formularioSalidaModalVisible || !asambleaId) return;
+
+    const cargarDatosExit = async () => {
+      try {
+        // 1. Obtener todas las asistencias de la asamblea
+        const { data: asistencias } = await supabase
+          .from('asistencias')
+          .select('vivienda_id, es_apoderado, estado_apoderado, casa_representada, formulario_cierre_completado, salida_autorizada')
+          .eq('asamblea_id', asambleaId);
+
+        if (!asistencias) {
+          setTotalConectadosSalida(0);
+          setTotalSalidasCompletadas(0);
+          return;
+        }
+
+        // 2. Calcular total conectados (contando personas, no viviendas)
+        // Cada asistencia es 1 persona, si es apoderado APROBADO suma 1 más
+        let totalConectados = 0;
+        let salidasCompletadas = 0;
+
+        asistencias.forEach(asistencia => {
+          // Contar cada asistencia como 1 persona
+          totalConectados += 1;
+          
+          // Si es apoderado APROBADO, contar como otra persona extra
+          if (asistencia.es_apoderado && asistencia.estado_apoderado === 'APROBADO' && asistencia.casa_representada) {
+            totalConectados += 1;
+          }
+
+          // Contar si completó salida (marca de formulario O salida autorizada)
+          if (asistencia.formulario_cierre_completado || asistencia.salida_autorizada) {
+            salidasCompletadas += 1;
+            // Si es apoderado APROBADO y completó salida, contar la salida de ambas personas
+            if (asistencia.es_apoderado && asistencia.estado_apoderado === 'APROBADO' && asistencia.casa_representada) {
+              salidasCompletadas += 1;
+            }
+          }
+        });
+
+        setTotalConectadosSalida(totalConectados);
+        setTotalSalidasCompletadas(salidasCompletadas);
+      } catch (error) {
+        console.error('Error cargando datos de salida:', error);
+      }
+    };
+
+    cargarDatosExit();
+
+    // Suscripción a cambios en asistencias para actualizar contador en tiempo real
+    const exitSubscription = supabase
+      .channel('asistencias-exit-' + asambleaId)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'asistencias',
+          filter: `asamblea_id=eq.${asambleaId}`,
+        },
+        (payload) => {
+          console.log('📤 Cambio en asistencias (salida):', payload);
+          cargarDatosExit();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(exitSubscription);
+    };
+  }, [formularioSalidaModalVisible, asambleaId]);
+
   // Calcular tiempo restante cuando cambie la asamblea
   useEffect(() => {
     calcularTiempoRestante();
@@ -238,12 +315,8 @@ export default function AdminAsamblea() {
       }
 
       setCerrarModalVisible(false);
-      Alert.alert('✅ Asamblea cerrada', 'La asamblea se ha cerrado correctamente', [
-        {
-          text: 'Aceptar',
-          onPress: () => router.replace({ pathname: '/admin' })
-        }
-      ]);
+      // Redirigir directamente al panel administrador
+      router.replace('/admin');
     } catch (e) {
       console.error(e);
       Alert.alert('Error', 'Ocurrió un error al cerrar la asamblea');
@@ -263,7 +336,8 @@ export default function AdminAsamblea() {
         payload: { asambleaId } 
       });
       
-      setFormularioSalidaModalVisible(false);
+      // Marcar como enviado en lugar de cerrar el modal inmediatamente
+      setFormularioSalidaEnviado(true);
       Alert.alert('✅ Enviado', 'Se ha enviado el formulario de salida a todos los residentes');
     } catch (e) {
       console.error('Error enviando formulario de salida:', e);
@@ -590,46 +664,88 @@ export default function AdminAsamblea() {
         animationType="fade"
         transparent={true}
         visible={formularioSalidaModalVisible}
-        onRequestClose={() => setFormularioSalidaModalVisible(false)}
+        onRequestClose={() => {
+          setFormularioSalidaModalVisible(false);
+          setFormularioSalidaEnviado(false);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.confirmModalContent}>
             <View style={styles.confirmModalHeader}>
               <Text style={styles.confirmModalIcon}>📋</Text>
-              <Text style={styles.confirmModalTitle}>¿Mostrar formulario de salida?</Text>
+              <Text style={styles.confirmModalTitle}>
+                {formularioSalidaEnviado ? '📤 Contador de Salidas' : '¿Mostrar formulario de salida?'}
+              </Text>
             </View>
             
-            <Text style={styles.confirmModalMessage}>
-              Se les mostrará a todos el formulario de asistencia y saldrán de la asamblea.
-            </Text>
+            {formularioSalidaEnviado ? (
+              // Vista cuando ya fue enviado: mostrar contador en tiempo real
+              <>
+                <Text style={styles.confirmModalMessage}>
+                  Residentes que han completado el formulario de salida:
+                </Text>
 
-            <View style={styles.confirmModalStats}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Residentes conectados</Text>
-                <Text style={styles.confirmStatValue}>{totalAsistentes}</Text>
-              </View>
-            </View>
+                <View style={[styles.confirmModalStats, { justifyContent: 'center', alignItems: 'center', marginVertical: 30 }]}>
+                  <Text style={{ fontSize: 48, fontWeight: 'bold', color: '#065f46' }}>
+                    {totalSalidasCompletadas}
+                  </Text>
+                  <Text style={{ fontSize: 18, color: '#6b7280', marginTop: 8 }}>
+                    de {totalConectadosSalida} residentes conectados
+                  </Text>
+                  <View style={{ marginTop: 16, paddingHorizontal: 16, width: '100%', backgroundColor: '#f0fdf4', borderRadius: 8, paddingVertical: 12 }}>
+                    <Text style={{ textAlign: 'center', color: '#065f46', fontWeight: '600' }}>
+                      Progreso: {totalConectadosSalida > 0 ? Math.round((totalSalidasCompletadas / totalConectadosSalida) * 100) : 0}%
+                    </Text>
+                  </View>
+                </View>
 
-            <Text style={styles.confirmModalWarning}>
-              ⚠️ Todos los residentes podrán rellenar el formulario de salida
-            </Text>
+                <Text style={styles.confirmModalWarning}>
+                  ⏳ Esperando a que los residentes completen el formulario de salida...
+                </Text>
+              </>
+            ) : (
+              // Vista antes de enviar: mostrar confirmación
+              <>
+                <Text style={styles.confirmModalMessage}>
+                  Se les mostrará a todos el formulario de asistencia y saldrán de la asamblea.
+                </Text>
+
+                <View style={styles.confirmModalStats}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>Residentes conectados</Text>
+                    <Text style={styles.confirmStatValue}>{totalConectadosSalida}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.confirmModalWarning}>
+                  ⚠️ Todos los residentes podrán rellenar el formulario de salida
+                </Text>
+              </>
+            )}
 
             <View style={styles.confirmModalButtons}>
               <TouchableOpacity
                 style={styles.confirmCancelButton}
-                onPress={() => setFormularioSalidaModalVisible(false)}
+                onPress={() => {
+                  setFormularioSalidaModalVisible(false);
+                  setFormularioSalidaEnviado(false);
+                }}
               >
-                <Text style={styles.confirmCancelButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.confirmDeleteButton, { backgroundColor: '#f97316' }]}
-                onPress={mostrarFormularioSalida}
-              >
-                <Text style={styles.confirmDeleteButtonText}>
-                  ✅ Sí, mostrar
+                <Text style={styles.confirmCancelButtonText}>
+                  {formularioSalidaEnviado ? 'Cerrar' : 'Cancelar'}
                 </Text>
               </TouchableOpacity>
+
+              {!formularioSalidaEnviado && (
+                <TouchableOpacity
+                  style={[styles.confirmDeleteButton, { backgroundColor: '#f97316' }]}
+                  onPress={mostrarFormularioSalida}
+                >
+                  <Text style={styles.confirmDeleteButtonText}>
+                    ✅ Sí, mostrar
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
