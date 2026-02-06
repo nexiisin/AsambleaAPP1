@@ -34,6 +34,11 @@ export default function SalaEspera() {
   const [ingresoCerrado, setIngresoCerrado] = useState(false);
   const [mostrarModalAdvertencia, setMostrarModalAdvertencia] = useState(!fromResults);
 
+  // Estados para datos cargados de BD
+  const [numeroCasaCargado, setNumeroCasaCargado] = useState<string | null>(numeroCasa || null);
+  const [esApoderado, setEsApoderado] = useState(false);
+  const [casaRepresentada, setCasaRepresentada] = useState<string | null>(null);
+
   // Estados del quórum
   const [totalViviendas, setTotalViviendas] = useState<number | null>(null);
   const [viviendasRepresentadas, setViviendasRepresentadas] = useState(0);
@@ -54,6 +59,52 @@ export default function SalaEspera() {
   // Refs para contador local (sin queries a BD)
   const crieroCierreIngresoRef = useRef<string | null>(null);
   const crieroCronometroRef = useRef<{ activo: boolean; pausado: boolean; inicio: string; duracion: number } | null>(null);
+
+  // Cargar información de la asistencia si numeroCasa no viene por parámetros
+  useEffect(() => {
+    if (!asistenciaId) return;
+    
+    const cargarDatosAsistencia = async () => {
+      try {
+        const { data: asistencia, error } = await supabase
+          .from('asistencias')
+          .select('vivienda_id, es_apoderado, estado_apoderado, casa_representada, viviendas(numero_casa)')
+          .eq('id', asistenciaId)
+          .single();
+
+        if (error || !asistencia) {
+          console.error('Error cargando asistencia:', error);
+          return;
+        }
+
+        // Si no tenemos numeroCasa por parámetros, usar el de la BD
+        if (!numeroCasa) {
+          const numCasa = (asistencia as any).viviendas?.numero_casa;
+          setNumeroCasaCargado(numCasa || null);
+        }
+
+        // Cargar datos de apoderado
+        if (asistencia.es_apoderado && asistencia.estado_apoderado === 'APROBADO') {
+          setEsApoderado(true);
+          
+          // Si casa_representada es un ID, buscar el número
+          if (asistencia.casa_representada) {
+            const { data: casaRep } = await supabase
+              .from('viviendas')
+              .select('numero_casa')
+              .eq('id', asistencia.casa_representada)
+              .single();
+            
+            setCasaRepresentada(casaRep?.numero_casa || asistencia.casa_representada);
+          }
+        }
+      } catch (error) {
+        console.error('Error cargando datos de asistencia:', error);
+      }
+    };
+
+    cargarDatosAsistencia();
+  }, [asistenciaId, numeroCasa]);
 
   useEffect(() => {
     // Animación de entrada
@@ -393,7 +444,10 @@ export default function SalaEspera() {
         {cronometroActivo ? (
           <>
             <Text style={styles.title}>Debate en Curso</Text>
-            <Text style={styles.subtitle}>Casa: {numeroCasa}</Text>
+            <Text style={styles.subtitle}>Casa: {numeroCasaCargado || '...'}</Text>
+            {esApoderado && casaRepresentada && (
+              <Text style={styles.subtitleApoderado}>📋 Apoderado - Casa: {casaRepresentada}</Text>
+            )}
 
             {/* Cronómetro visual */}
             <View style={styles.cronometroContainer}>
@@ -420,7 +474,10 @@ export default function SalaEspera() {
             <Text style={styles.title}>
               {ingresoCerrado ? 'Esperando Acción del Administrador' : 'Registro Exitoso'}
             </Text>
-            <Text style={styles.subtitle}>Casa: {numeroCasa}</Text>
+            <Text style={styles.subtitle}>Casa: {numeroCasaCargado || '...'}</Text>
+            {esApoderado && casaRepresentada && (
+              <Text style={styles.subtitleApoderado}>📋 Apoderado - Casa: {casaRepresentada}</Text>
+            )}
 
             {/* Animación de carga */}
             <View style={styles.loadingContainer}>
@@ -535,8 +592,16 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 18,
     color: '#047857',
-    marginBottom: 32,
+    marginBottom: 12,
     fontWeight: '600',
+  },
+
+  subtitleApoderado: {
+    fontSize: 16,
+    color: '#f59e0b',
+    marginBottom: 20,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   loadingContainer: {
