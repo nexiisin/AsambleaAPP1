@@ -25,8 +25,15 @@ export default function SalaEsperaApoderado() {
   useEffect(() => {
     if (!asambleaId || !asistenciaId) return;
 
+    let isActive = true;
+    const pollIntervalMs = 5000;
+
     // Función para verificar el estado del apoderado
-    const verificarEstado = async () => {
+    const verificarEstado = async (showSpinner: boolean) => {
+      if (showSpinner) {
+        setVerificando(true);
+      }
+
       try {
         const { data, error } = await supabase
           .from('asistencias')
@@ -78,12 +85,14 @@ export default function SalaEsperaApoderado() {
       } catch (e) {
         console.error('Error verificando estado:', e);
       } finally {
-        setVerificando(false);
+        if (showSpinner && isActive) {
+          setVerificando(false);
+        }
       }
     };
 
-    // Verificación inicial
-    verificarEstado();
+    // Verificación inicial con indicador
+    verificarEstado(true);
 
     // Suscripción realtime para detectar cambios
     const channel = supabase
@@ -98,10 +107,15 @@ export default function SalaEsperaApoderado() {
         },
         (payload) => {
           console.log('🔔 Cambio detectado:', payload.new);
-          verificarEstado();
+          verificarEstado(false);
         }
       )
       .subscribe();
+
+    // Fallback de polling para ambientes donde realtime no dispara (web/prod)
+    const pollId = setInterval(() => {
+      verificarEstado(false);
+    }, pollIntervalMs);
 
     const broadcastChannel = supabase
       .channel(`asamblea-broadcast-${asambleaId}`)
@@ -118,6 +132,8 @@ export default function SalaEsperaApoderado() {
       .subscribe();
 
     return () => {
+      isActive = false;
+      clearInterval(pollId);
       supabase.removeChannel(channel);
       supabase.removeChannel(broadcastChannel);
     };
