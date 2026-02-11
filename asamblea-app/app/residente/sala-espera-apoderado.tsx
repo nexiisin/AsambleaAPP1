@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -21,6 +22,7 @@ export default function SalaEsperaApoderado() {
   }>();
 
   const [verificando, setVerificando] = useState(true);
+  const navigatedRef = useRef(false);
 
   useEffect(() => {
     if (!asambleaId || !asistenciaId) return;
@@ -46,41 +48,55 @@ export default function SalaEsperaApoderado() {
         console.log('📋 Estado apoderado:', data?.estado_apoderado);
 
         if (data?.estado_apoderado === 'APROBADO') {
-          // Mostrar mensaje de aprobación
-          Alert.alert(
-            '✅ ¡Aprobado!',
-            'Tu apoderación ha sido aprobada. Bienvenido a la asamblea.',
-            [
-              {
-                text: 'Continuar',
-                onPress: () => {
-                  // Redirigir a sala de espera normal
-                  router.replace({
-                    pathname: '/residente/sala-espera',
-                    params: {
-                      asambleaId,
-                      asistenciaId,
-                      numeroCasa,
-                    },
-                  });
-                },
+          if (navigatedRef.current) return;
+          navigatedRef.current = true;
+
+          const goToSalaEspera = () => {
+            router.replace({
+              pathname: '/residente/sala-espera',
+              params: {
+                asambleaId,
+                asistenciaId,
+                numeroCasa,
               },
-            ]
-          );
+            });
+          };
+
+          if (Platform.OS === 'web') {
+            // En web el Alert no soporta botones, navega directo.
+            goToSalaEspera();
+          } else {
+            Alert.alert(
+              '✅ ¡Aprobado!',
+              'Tu apoderación ha sido aprobada. Bienvenido a la asamblea.',
+              [
+                {
+                  text: 'Continuar',
+                  onPress: goToSalaEspera,
+                },
+              ]
+            );
+          }
         } else if (data?.estado_apoderado === 'RECHAZADO') {
-          // Mostrar mensaje de rechazo
-          Alert.alert(
-            '❌ Apoderación Rechazada',
-            'Tu solicitud de apoderación ha sido rechazada por el administrador. Puedes intentar registrarte nuevamente.',
-            [
-              {
-                text: 'Volver al inicio',
-                onPress: () => {
-                  router.replace('/residente');
+          if (navigatedRef.current) return;
+          navigatedRef.current = true;
+
+          const goHome = () => router.replace('/residente');
+
+          if (Platform.OS === 'web') {
+            goHome();
+          } else {
+            Alert.alert(
+              '❌ Apoderación Rechazada',
+              'Tu solicitud de apoderación ha sido rechazada por el administrador. Puedes intentar registrarte nuevamente.',
+              [
+                {
+                  text: 'Volver al inicio',
+                  onPress: goHome,
                 },
-              },
-            ]
-          );
+              ]
+            );
+          }
         }
       } catch (e) {
         console.error('Error verificando estado:', e);
@@ -185,6 +201,16 @@ export default function SalaEsperaApoderado() {
         <TouchableOpacity
           style={styles.exitButton}
           onPress={() => {
+            if (Platform.OS === 'web') {
+              const confirmed = typeof window !== 'undefined'
+                ? window.confirm('¿Estás seguro de que quieres salir? Perderás tu solicitud de apoderación.')
+                : false;
+              if (confirmed) {
+                router.replace('/residente');
+              }
+              return;
+            }
+
             Alert.alert(
               'Salir',
               '¿Estás seguro de que quieres salir? Perderás tu solicitud de apoderación.',

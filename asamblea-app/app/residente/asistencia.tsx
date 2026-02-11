@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -118,6 +119,27 @@ export default function ResidenteAsistencia() {
 
       setCargando(false);
       
+      const finalizarSalida = (mensaje: string) => {
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') {
+            window.alert(mensaje);
+          }
+          router.replace('/');
+          return;
+        }
+
+        Alert.alert(
+          '✅ Salida Registrada',
+          mensaje,
+          [
+            {
+              text: 'Aceptar',
+              onPress: () => router.replace('/'),
+            }
+          ]
+        );
+      };
+
       // Generar y descargar el comprobante de asistencia automáticamente
       try {
         await descargarComprobanteAsistencia({
@@ -131,29 +153,11 @@ export default function ResidenteAsistencia() {
         });
 
         // Mostrar mensaje de confirmación y redirigir a pantalla principal
-        Alert.alert(
-          '✅ Salida Registrada',
-          'Tu comprobante de asistencia ha sido descargado. ¡Gracias por acompañarnos en la asamblea!',
-          [
-            {
-              text: 'Aceptar',
-              onPress: () => router.replace('/'),
-            }
-          ]
-        );
+        finalizarSalida('Tu comprobante de asistencia ha sido descargado. ¡Gracias por acompañarnos en la asamblea!');
       } catch (pdfError) {
         console.error('Error descargando comprobante:', pdfError);
         // Si falla el PDF, igualmente sacar al usuario a la pantalla principal
-        Alert.alert(
-          '✅ Salida Registrada',
-          'Tu salida ha sido registrada correctamente. ¡Gracias por acompañarnos en la asamblea!',
-          [
-            {
-              text: 'Aceptar',
-              onPress: () => router.replace('/'),
-            }
-          ]
-        );
+        finalizarSalida('Tu salida ha sido registrada correctamente. ¡Gracias por acompañarnos en la asamblea!');
       }
     } catch (e) {
       console.error('Error registrando salida:', e);
