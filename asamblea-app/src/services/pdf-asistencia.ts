@@ -30,8 +30,15 @@ const loadFirmaPngAsBase64 = async (): Promise<string> => {
   await asset.downloadAsync();
 
   if (Platform.OS === 'web') {
-    // En web, usar la URL del asset y evitar FileSystem.readAsStringAsync.
-    return asset.uri;
+    const response = await fetch(asset.uri);
+    const blob = await response.blob();
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error('No se pudo leer la firma')); 
+      reader.readAsDataURL(blob);
+    });
+    return base64;
   }
 
   const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
