@@ -29,6 +29,11 @@ const loadFirmaPngAsBase64 = async (): Promise<string> => {
 
   await asset.downloadAsync();
 
+  if (Platform.OS === 'web') {
+    // En web, usar la URL del asset y evitar FileSystem.readAsStringAsync.
+    return asset.uri;
+  }
+
   const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
     encoding: 'base64',
   });
@@ -196,6 +201,12 @@ export const descargarComprobanteAsistencia = async (
         </body>
       </html>
     `;
+
+    if (Platform.OS === 'web') {
+      // En web, abrir el dialogo de impresion y permitir guardar como PDF.
+      await Print.printAsync({ html: htmlContent });
+      return true;
+    }
 
     const { uri } = await Print.printToFileAsync({
       html: htmlContent,
