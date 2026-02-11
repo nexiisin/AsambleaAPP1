@@ -210,8 +210,25 @@ export const descargarComprobanteAsistencia = async (
     `;
 
     if (Platform.OS === 'web') {
-      // En web, abrir el dialogo de impresion y permitir guardar como PDF.
-      await Print.printAsync({ html: htmlContent });
+      if (typeof window === 'undefined') {
+        throw new Error('Impresion no disponible en este entorno');
+      }
+
+      const printWindow = window.open('', '_blank', 'width=900,height=1200');
+      if (!printWindow) {
+        throw new Error('No se pudo abrir la ventana de impresion');
+      }
+
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.close();
+      };
+
       return true;
     }
 
