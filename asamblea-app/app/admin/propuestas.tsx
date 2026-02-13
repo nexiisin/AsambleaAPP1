@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   FlatList,
   Modal,
   TextInput,
@@ -14,6 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 import { useResponsive } from '@/src/hooks/useResponsive';
+import { styles, modalStyles } from '@/src/styles/screens/admin/propuestas.styles';
 
 const PANEL_WIDTH_MOBILE = 520;
 const PANEL_WIDTH_DESKTOP = 900;
@@ -118,8 +118,15 @@ export default function Propuestas() {
       });
 
       if (error) throw error;
-      Alert.alert('✅ Votación iniciada', 'Los residentes pueden votar ahora');
-      await cargar();
+
+      router.push({
+        pathname: '/admin/resultados',
+        params: {
+          asambleaId,
+          propuestaId: item.id,
+          live: '1',
+        },
+      });
     } catch (e) {
       console.error('Error iniciando votación:', e);
       Alert.alert('Error', 'No se pudo iniciar la votación');
@@ -309,142 +316,3 @@ export default function Propuestas() {
   );
 }
 
-const styles = StyleSheet.create({
-  page: { flex: 1, alignItems: 'center' },
-  container: { width: '100%', padding: 16, alignItems: 'center' },
-  backButton: { alignSelf: 'flex-start', marginBottom: 8 },
-  backButtonText: { color: '#065f46', fontWeight: '700', fontSize: 15 },
-  title: { fontSize: 26, fontWeight: '800', marginBottom: 16, color: '#1f2937' },
-  createButton: { 
-    backgroundColor: '#16a34a', 
-    paddingVertical: 16, 
-    paddingHorizontal: 28, 
-    borderRadius: 14, 
-    marginBottom: 24,
-    shadowColor: '#16a34a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  createButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  emptyBox: { 
-    backgroundColor: '#fff', 
-    padding: 40, 
-    borderRadius: 16, 
-    marginTop: 20,
-    alignItems: 'center',
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  emptyIcon: { fontSize: 56, marginBottom: 12 },
-  emptyText: { color: '#374151', fontSize: 18, fontWeight: '600', marginBottom: 4 },
-  emptySubtext: { color: '#9ca3af', fontSize: 14 },
-  card: { 
-    backgroundColor: '#fff', 
-    padding: 20, 
-    borderRadius: 16, 
-    width: '100%',
-    maxWidth: 650,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  orderBadge: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  orderBadgeText: {
-    color: '#6b7280',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusBadgeText: {
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  cardTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8, color: '#1f2937' },
-  cardText: { color: '#4b5563', marginBottom: 12, fontSize: 15, lineHeight: 22 },
-  meta: { color: '#9ca3af', fontSize: 13, fontWeight: '500' },
-  cardBody: { marginBottom: 16 },
-  cardActions: { flexDirection: 'row', gap: 10, justifyContent: 'flex-end' },
-  editBtn: { 
-    backgroundColor: '#f3f4f6', 
-    paddingVertical: 12, 
-    paddingHorizontal: 20, 
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  editBtnText: { color: '#374151', fontWeight: '600', fontSize: 14 },
-  voteBtn: { 
-    backgroundColor: '#2563eb', 
-    paddingVertical: 12, 
-    paddingHorizontal: 20, 
-    borderRadius: 10,
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  voteBtnDisabled: {
-    backgroundColor: '#9ca3af',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  voteBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  closeBtn: { 
-    backgroundColor: '#dc2626', 
-    paddingVertical: 12, 
-    paddingHorizontal: 20, 
-    borderRadius: 10,
-    shadowColor: '#dc2626',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  closeBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  resultsBtn: { 
-    backgroundColor: '#16a34a', 
-    paddingVertical: 12, 
-    paddingHorizontal: 20, 
-    borderRadius: 10,
-    shadowColor: '#16a34a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  resultsBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-});
-
-const modalStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  content: { width: '90%', maxWidth: 420, backgroundColor: '#fff', padding: 20, borderRadius: 12 },
-  heading: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 12, marginBottom: 8, backgroundColor: '#fafafa' },
-  cancelBtn: { flex: 1, backgroundColor: '#f3f4f6', padding: 12, borderRadius: 8, alignItems: 'center' },
-  confirmBtn: { flex: 1, backgroundColor: '#16a34a', padding: 12, borderRadius: 8, alignItems: 'center' },
-});

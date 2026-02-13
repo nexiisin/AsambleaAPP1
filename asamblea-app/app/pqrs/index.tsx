@@ -1,7 +1,8 @@
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 import { ScaledText } from '@/src/components/ScaledText';
+import { styles } from '@/src/styles/screens/pqrs/index.styles';
 
 const FORMULARIOS = {
   documento: 'https://docs.google.com/forms/d/e/1FAIpQLScGGDYB2ccY6trDeM8G7R_oG-dIIIoz3d8igCHfjYKnUE5G6w/viewform?usp=header',
@@ -49,48 +50,3 @@ export default function PQRS() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-
-  card: {
-    width: '100%',
-    maxWidth: 420,
-    alignItems: 'center',
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#111827',
-    textAlign: 'center',
-  },
-
-  subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-
-  button: {
-    width: '100%',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    backgroundColor: '#f3f4f6',
-    marginBottom: 12,
-  },
-
-  buttonText: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#111827',
-    fontWeight: '500',
-  },
-});

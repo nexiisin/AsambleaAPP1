@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   FlatList,
   Alert,
   ScrollView,
@@ -12,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { styles } from '@/src/styles/screens/admin/resultados.styles';
 
 interface ResultStats {
   votos_si: number;
@@ -23,11 +23,16 @@ interface ResultStats {
 }
 
 export default function AdminResultados() {
-  const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
+  const { asambleaId, propuestaId, live } = useLocalSearchParams<{
+    asambleaId: string;
+    propuestaId?: string;
+    live?: string;
+  }>();
   const [propuestas, setPropuestas] = useState<any[]>([]);
   const [cargando, setCargando] = useState(false);
   const [propuestaSeleccionada, setPropuestaSeleccionada] = useState<any>(null);
   const [stats, setStats] = useState<ResultStats | null>(null);
+  const liveMode = live === '1';
 
   const cargarPropuestasCerradas = useCallback(async () => {
     if (!asambleaId) return;
@@ -115,6 +120,27 @@ export default function AdminResultados() {
     }
   };
 
+  const abrirPropuesta = useCallback(async (id: string) => {
+    const { data, error } = await supabase
+      .from('propuestas')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      console.error('Error cargando propuesta:', error);
+      return;
+    }
+
+    setPropuestaSeleccionada(data);
+    await cargarEstadisticas(data.id);
+  }, [asambleaId]);
+
+  useEffect(() => {
+    if (!propuestaId) return;
+    abrirPropuesta(propuestaId);
+  }, [propuestaId, abrirPropuesta]);
+
   const handleMostrarResultados = async (item: any) => {
     console.log('🔵🔵🔵 BOTÓN PRESIONADO - handleMostrarResultados');
     console.log('🔵🔵🔵 Item completo:', JSON.stringify(item, null, 2));
@@ -168,6 +194,46 @@ export default function AdminResultados() {
     await cargarEstadisticas(item.id);
   };
 
+  useEffect(() => {
+    if (!asambleaId || !propuestaSeleccionada) return;
+
+    const propuestaEnVivo = liveMode || propuestaSeleccionada.estado === 'ABIERTA';
+    if (!propuestaEnVivo) return;
+
+    const channel = supabase
+      .channel(`admin-resultados-live-${propuestaSeleccionada.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'votos',
+          filter: `propuesta_id=eq.${propuestaSeleccionada.id}`,
+        },
+        async () => {
+          await cargarEstadisticas(propuestaSeleccionada.id);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'propuestas',
+          filter: `id=eq.${propuestaSeleccionada.id}`,
+        },
+        async (payload) => {
+          setPropuestaSeleccionada(payload.new);
+          await cargarEstadisticas(propuestaSeleccionada.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [asambleaId, propuestaSeleccionada, liveMode]);
+
   if (propuestaSeleccionada && stats) {
     const totalVotos = stats.votos_si + stats.votos_no;
     const totalAsistentes = stats.total_asistentes;
@@ -202,6 +268,12 @@ export default function AdminResultados() {
             </TouchableOpacity>
 
             <Text style={styles.title}>📊 Resultados de votación</Text>
+
+            {(liveMode || propuestaSeleccionada.estado === 'ABIERTA') && (
+              <View style={styles.liveBadge}>
+                <Text style={styles.liveBadgeText}>🔴 En vivo · actualizando en tiempo real</Text>
+              </View>
+            )}
             
             <View style={styles.propuestaBox}>
               <Text style={styles.propuestaTitulo}>{propuestaSeleccionada.titulo}</Text>
@@ -392,358 +464,3 @@ export default function AdminResultados() {
   );
 }
 
-const styles = StyleSheet.create({
-  page: { flex: 1, alignItems: 'center' },
-  container: { width: '100%', maxWidth: 700, padding: 16 },
-  scrollContent: { 
-    paddingVertical: 20,
-  },
-  title: { fontSize: 26, fontWeight: '800', marginBottom: 24, color: '#1f2937', textAlign: 'center' },
-  
-  backButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 6,
-    paddingHorizontal: 0,
-    marginBottom: 16,
-    alignSelf: 'flex-start',
-  },
-  backButtonText: {
-    color: '#065f46',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-
-  emptyBox: { 
-    backgroundColor: '#fff', 
-    padding: 40, 
-    borderRadius: 16, 
-    marginTop: 20,
-    alignItems: 'center',
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  emptyIcon: { fontSize: 56, marginBottom: 12 },
-  emptyText: { color: '#374151', fontSize: 18, fontWeight: '600', marginBottom: 4 },
-  emptySubtext: { color: '#9ca3af', fontSize: 14 },
-
-  card: { 
-    backgroundColor: '#fff', 
-    padding: 20, 
-    borderRadius: 16, 
-    width: '100%',
-    maxWidth: 650,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  orderBadge: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  orderBadgeText: {
-    color: '#6b7280',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  statusBadge: {
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusBadgeText: {
-    color: '#991b1b',
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  cardTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8, color: '#1f2937' },
-  cardText: { color: '#4b5563', marginBottom: 12, fontSize: 15, lineHeight: 22 },
-  cardBody: { marginBottom: 16 },
-  cardActions: { flexDirection: 'row', gap: 10, justifyContent: 'flex-end' },
-  
-  statsBtn: { 
-    backgroundColor: '#f3f4f6', 
-    paddingVertical: 12, 
-    paddingHorizontal: 20, 
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  statsBtnText: { color: '#374151', fontWeight: '600', fontSize: 14 },
-  
-  publishBtn: { 
-    backgroundColor: '#16a34a', 
-    paddingVertical: 12, 
-    paddingHorizontal: 20, 
-    borderRadius: 10,
-    shadowColor: '#16a34a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  publishBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-
-  // Vista de estadísticas
-  propuestaBox: {
-    width: '100%',
-    backgroundColor: '#f9fafb',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  propuestaTitulo: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  propuestaDescripcion: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  summaryBox: {
-    width: '100%',
-    backgroundColor: '#f0fdf4',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    gap: 8,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4b5563',
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#16a34a',
-  },
-  chartContainer: {
-    width: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 32,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  chartTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#1f2937',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  columnsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    height: 180,
-    gap: 12,
-    paddingHorizontal: 8,
-    marginBottom: 16,
-  },
-  baseLine: {
-    width: '100%',
-    height: 3,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 2,
-    marginTop: -3,
-  },
-  columnWrapper: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    minHeight: 240,
-    maxWidth: 85,
-  },
-  columnBar: {
-    width: '100%',
-    height: 100,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-  },
-  columnFill: {
-    width: '100%',
-    borderRadius: 8,
-    minHeight: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  columnFillSi: {
-    backgroundColor: '#22c55e',
-  },
-  columnFillNo: {
-    backgroundColor: '#ef4444',
-  },
-  columnFillPending: {
-    backgroundColor: '#f59e0b',
-  },
-  columnFillAbsent: {
-    backgroundColor: '#9ca3af',
-  },
-  columnStats: {
-    marginTop: 14,
-    alignItems: 'center',
-    height: 50,
-  },
-  columnValue: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#1f2937',
-  },
-  columnPercentage: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#6b7280',
-  },
-  columnLabelContainer: {
-    marginTop: 4,
-    alignItems: 'center',
-    height: 46,
-    justifyContent: 'flex-start',
-  },
-  columnLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#4b5563',
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-  resultBox: {
-    width: '100%',
-    backgroundColor: '#f0fdf4',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 24,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#16a34a',
-  },
-  resultLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  resultInfo: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  resultText: {
-    fontSize: 28,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-
-  // Estilos para gráfico compacto
-  compactChartContainer: {
-    width: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  chartsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  compactColumn: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  compactBarWrapper: {
-    height: 120,
-    justifyContent: 'flex-end',
-  },
-  compactBar: {
-    width: 32,
-    height: 120,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  compactBarFill: {
-    width: '100%',
-    borderRadius: 6,
-  },
-  barFillSi: {
-    backgroundColor: '#22c55e',
-  },
-  barFillNo: {
-    backgroundColor: '#ef4444',
-  },
-  barFillPending: {
-    backgroundColor: '#f59e0b',
-  },
-  barFillAbsent: {
-    backgroundColor: '#9ca3af',
-  },
-  compactBarValue: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1f2937',
-  },
-  compactBarPercentage: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#6b7280',
-  },
-  compactBarEmoji: {
-    fontSize: 16,
-    marginVertical: 2,
-  },
-  compactBarLabel: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#4b5563',
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-});

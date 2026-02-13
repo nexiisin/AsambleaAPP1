@@ -1,9 +1,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { styles as screenStyles } from '@/src/styles/screens/residente/votacion.styles';
+
+const styles = screenStyles;
 
 export default function Votacion() {
   const { asambleaId, asistenciaId } = useLocalSearchParams<{ asambleaId: string; asistenciaId?: string }>();
@@ -16,6 +19,7 @@ export default function Votacion() {
   const [propuestaCerrada, setPropuestaCerrada] = useState(false);
   const [esApoderadoAprobado, setEsApoderadoAprobado] = useState(false);
   const [casaRepresentadaId, setCasaRepresentadaId] = useState<string | null>(null);
+  const salidaFormRedirectedRef = useRef(false);
 
   const cargarPropuestaActiva = useCallback(async () => {
     if (!asambleaId) return;
@@ -145,8 +149,10 @@ export default function Votacion() {
       .channel(`asamblea-broadcast-${asambleaId}`)
       .on('broadcast', { event: 'mostrar-formulario-salida' }, (payload) => {
         try {
+          if (salidaFormRedirectedRef.current) return;
+          salidaFormRedirectedRef.current = true;
           console.log('📋 Admin mostró formulario de salida');
-          router.push({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
+          router.replace({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
         } catch (e) {
           console.error('Error redirigiendo a formulario de salida:', e);
         }
@@ -311,172 +317,3 @@ export default function Votacion() {
     </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
-  card: { 
-    width: '100%', 
-    maxWidth: 600, 
-    backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-    padding: 36, 
-    borderRadius: 24, 
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(22, 163, 74, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  ballotIcon: {
-    fontSize: 48,
-  },
-  title: { 
-    fontSize: 28, 
-    fontWeight: '800', 
-    marginBottom: 16, 
-    textAlign: 'center',
-    color: '#1f2937',
-    letterSpacing: -0.5,
-  },
-  subtitle: { fontSize: 16, color: '#6b7280', marginBottom: 16, textAlign: 'center' },
-  description: { 
-    fontSize: 17, 
-    color: '#4b5563', 
-    marginBottom: 32, 
-    textAlign: 'center',
-    lineHeight: 26,
-  },
-  
-  // Mensajes de espera
-  waitingIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  waitingMessage: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f2937',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  waitingSubtext: {
-    fontSize: 14,
-    color: '#9ca3af',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-
-  // Votación
-  votePrompt: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1f2937',
-    textAlign: 'center',
-    marginBottom: 24,
-    letterSpacing: -0.5,
-  },
-  buttonsRow: { 
-    flexDirection: 'row', 
-    gap: 20, 
-    width: '100%', 
-  },
-  voteBtn: {
-    flex: 1,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
-    minHeight: 120,
-  },
-  yesBtn: { 
-    backgroundColor: '#16a34a', 
-    shadowColor: '#16a34a',
-  },
-  noBtn: { 
-    backgroundColor: '#ef4444', 
-    shadowColor: '#ef4444',
-  },
-  voteBtnIcon: {
-    fontSize: 40,
-    marginBottom: 8,
-  },
-  voteBtnText: { 
-    color: '#fff', 
-    fontSize: 22, 
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  
-  // Gracias por votar
-  thanksContainer: {
-    alignItems: 'center',
-    paddingVertical: 24,
-  },
-  checkCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#16a34a',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#16a34a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  checkIcon: {
-    color: '#fff',
-    fontSize: 48,
-    fontWeight: '900',
-  },
-  thanks: { 
-    fontSize: 24, 
-    color: '#16a34a', 
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 12,
-    letterSpacing: -0.5,
-  },
-  thanksSubtext: {
-    fontSize: 16,
-    color: '#4b5563',
-    textAlign: 'center',
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-  thanksNote: {
-    fontSize: 14,
-    color: '#9ca3af',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  
-  backBtn: { 
-    marginTop: 16, 
-    backgroundColor: '#f3f4f6', 
-    paddingVertical: 12, 
-    paddingHorizontal: 24, 
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  backBtnText: { color: '#374151', fontWeight: '600' },
-});

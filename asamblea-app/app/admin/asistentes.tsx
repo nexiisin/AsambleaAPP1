@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   FlatList,
   TextInput,
   ActivityIndicator,
@@ -12,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { styles } from '@/src/styles/screens/admin/asistentes.styles';
 
 type Asistente = {
   id: string;
@@ -23,8 +23,6 @@ type Asistente = {
   casa_representada: string | null;
   estado_apoderado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | null;
 };
-
-const PANEL_WIDTH = 520;
 
 export default function AdminAsistentes() {
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
@@ -184,7 +182,7 @@ export default function AdminAsistentes() {
       await channel.send({
         type: 'broadcast',
         event: 'asistencia',
-        payload: { asistenciaId: asistente.id },
+        payload: { asistenciaId: asistente.id, action: 'permitir-salida-anticipada' },
       });
     } catch (e) {
       console.error('Error enviando salida anticipada:', e);
@@ -307,74 +305,3 @@ export default function AdminAsistentes() {
     </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  page: { flex: 1 },
-  container: {
-    flex: 1,
-    maxWidth: PANEL_WIDTH,
-    width: '100%',
-    alignSelf: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { marginTop: 12, color: '#065f46', fontWeight: '600' },
-  backButton: { marginBottom: 12 },
-  backButtonText: { color: '#065f46', fontSize: 16, fontWeight: '600' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#065f46', textAlign: 'center', marginBottom: 16 },
-  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  statLabel: { color: '#6b7280', fontSize: 14 },
-  statValue: { color: '#065f46', fontSize: 24, fontWeight: '700' },
-  search: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  listContent: { paddingBottom: 24 },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  cardTitle: { fontSize: 17, fontWeight: '700', color: '#1f2937' },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  badgeText: { color: '#ffffff', fontSize: 11, fontWeight: '700' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  label: { color: '#6b7280', fontSize: 13, fontWeight: '600' },
-  value: { color: '#1f2937', fontSize: 13, fontWeight: '700' },
-  emptyBox: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  emptyText: { color: '#6b7280', fontSize: 15 },
-  salidaButton: {
-    marginTop: 12,
-    backgroundColor: '#16a34a',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  salidaButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-});

@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Image,
   ActivityIndicator,
   Animated,
@@ -15,10 +14,12 @@ import Svg, { Circle } from 'react-native-svg';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { styles as screenStyles } from '@/src/styles/screens/residente/sala-espera.styles';
 
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = Math.min(width * 0.5, 180);
 const STROKE_WIDTH = 6;
+const styles = screenStyles;
 
 export default function SalaEspera() {
   const { asambleaId, asistenciaId, numeroCasa, fromResults } = useLocalSearchParams<{
@@ -33,6 +34,8 @@ export default function SalaEspera() {
   const [tiempoRestante, setTiempoRestante] = useState('');
   const [ingresoCerrado, setIngresoCerrado] = useState(false);
   const [mostrarModalAdvertencia, setMostrarModalAdvertencia] = useState(!fromResults);
+  const salidaFormRedirectedRef = useRef(false);
+  const asistenciaRedirectedRef = useRef(false);
 
   // Estados para datos cargados de BD
   const [numeroCasaCargado, setNumeroCasaCargado] = useState<string | null>(numeroCasa || null);
@@ -305,9 +308,13 @@ export default function SalaEspera() {
       .channel(`asamblea-broadcast-${asambleaId}`)
       .on('broadcast', { event: 'asistencia' }, (payload) => {
         try {
+          const action = payload?.payload?.action;
+          if (action !== 'permitir-salida-anticipada') return;
           const targetId = payload?.payload?.asistenciaId;
           if (targetId && asistenciaId && targetId === asistenciaId) {
-            router.push({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
+            if (asistenciaRedirectedRef.current) return;
+            asistenciaRedirectedRef.current = true;
+            router.replace({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
           }
         } catch (e) {
           console.error('Error redirigiendo a asistencia:', e);
@@ -315,8 +322,10 @@ export default function SalaEspera() {
       })
       .on('broadcast', { event: 'mostrar-formulario-salida' }, (payload) => {
         try {
+          if (salidaFormRedirectedRef.current) return;
+          salidaFormRedirectedRef.current = true;
           console.log('📋 Admin mostró formulario de salida');
-          router.push({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
+          router.replace({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
         } catch (e) {
           console.error('Error redirigiendo a formulario de salida:', e);
         }
@@ -557,297 +566,3 @@ function CronometroCirculo({ valor, label }: { valor: number; label: string }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-
-  content: {
-    alignItems: 'center',
-    maxWidth: 400,
-    width: '100%',
-  },
-
-  logoContainer: {
-    marginBottom: 24,
-  },
-
-  logo: {
-    width: 140,
-    height: 140,
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#065f46',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-
-  subtitle: {
-    fontSize: 18,
-    color: '#047857',
-    marginBottom: 12,
-    fontWeight: '600',
-  },
-
-  subtitleApoderado: {
-    fontSize: 16,
-    color: '#f59e0b',
-    marginBottom: 20,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-
-  loadingContainer: {
-    marginBottom: 32,
-    padding: 20,
-  },
-
-  infoContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#065f46',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-
-  infoText: {
-    fontSize: 15,
-    color: '#374151',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-
-  timerContainer: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#d1d5db',
-    alignItems: 'center',
-  },
-
-  timerLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
-  },
-
-  timerValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#16a34a',
-    fontFamily: 'monospace',
-  },
-
-  quorumContainer: {
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#d1d5db',
-    alignItems: 'center',
-  },
-  quorumLabel: {
-    fontSize: 14,
-    color: '#065f46',
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  quorumBar: {
-    width: '100%',
-    height: 12,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  quorumFill: {
-    height: '100%',
-    borderRadius: 999,
-  },
-  quorumFillOk: {
-    backgroundColor: '#22c55e',
-  },
-  quorumFillPending: {
-    backgroundColor: '#f59e0b',
-  },
-  quorumHint: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#4b5563',
-    textAlign: 'center',
-  },
-
-  voteNowButton: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    width: '80%'
-  },
-  voteNowText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700'
-  },
-
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10b981',
-    marginRight: 8,
-  },
-
-  statusText: {
-    fontSize: 13,
-    color: '#065f46',
-    fontWeight: '500',
-  },
-
-  // Estilos del cronómetro
-  cronometroContainer: {
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-
-  circlesRow: {
-    flexDirection: 'row',
-    gap: 20,
-    marginBottom: 20,
-  },
-
-  circleContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-
-  circleText: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-
-  circleValue: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#065f46',
-  },
-
-  circleLabel: {
-    fontSize: 14,
-    color: '#047857',
-    fontWeight: '600',
-  },
-
-  cronometroEstado: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#065f46',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-
-  // Estilos del modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    width: '90%',
-    maxWidth: 400,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  modalIcon: {
-    fontSize: 56,
-    marginBottom: 12,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#dc2626',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  modalText: {
-    fontSize: 16,
-    color: '#374151',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 12,
-  },
-  modalTextWarning: {
-    fontSize: 15,
-    color: '#065f46',
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  warningList: {
-    alignSelf: 'stretch',
-    backgroundColor: '#fef3c7',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  warningItem: {
-    fontSize: 14,
-    color: '#92400e',
-    lineHeight: 22,
-    marginBottom: 8,
-  },
-  modalButton: {
-    backgroundColor: '#16a34a',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    minWidth: 150,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

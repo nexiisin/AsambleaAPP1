@@ -1,8 +1,9 @@
-import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, TouchableOpacity, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 import { ScaledText } from '@/src/components/ScaledText';
+import { styles } from '@/src/styles/screens/home/index.styles';
 
 export default function Home() {
   return (
@@ -53,91 +54,3 @@ export default function Home() {
   );
 }
 
-const BUTTON_WIDTH = 280;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-  },
-
-  main: {
-   alignItems: 'center',
-  },
-
-
-  /* HEADER */
-  header: {
-    alignItems: 'center',
-    marginTop: 40,
-  },
-
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 12,
-  },
-
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#065f46',
-     marginBottom: 29,// 👈 AQUÍ (≈ 1 cm visual)
-  },
-
-  /* CONTENIDO CENTRAL */
-  centerContent: {
-    alignItems: 'center',
-    marginTop: 24//controla la distancia desde el título
-  },
-
-
-  /* FOOTER */
-  footer: {
-    alignItems: 'center',
-    marginTop: 'auto', // 👈 CLAVE ABSOLUTA
-    paddingBottom: 24,
-  },
-
-  /* BOTONES */
-  button: {
-    paddingVertical: 15,
-    borderRadius: 14,
-    width: BUTTON_WIDTH,
-    marginBottom: 14,
-  },
-
-  primary: {
-    backgroundColor: '#16a34a',
-  },
-
-  admin: {
-    backgroundColor: '#2563eb',
-  },
-
-  gray: {
-    backgroundColor: '#9CA3AF',
-  },
-
-  buttonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
-  pqrsText: {
-    fontSize: 14,
-    color: '#374151',
-    marginBottom: 10,
-  },
-
-  pqrsButtonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontSize: 15,
-    fontWeight: '500',
-  },
-});

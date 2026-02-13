@@ -1,0 +1,75 @@
+import { StyleSheet } from 'react-native';
+import { layout, palette } from '@/src/styles/tokens';
+
+const PANEL_WIDTH = layout.panelMaxWidth;
+
+export const styles = StyleSheet.create({
+  page: { flex: 1 },
+  container: {
+    flex: 1,
+    maxWidth: PANEL_WIDTH,
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingText: { marginTop: 12, color: palette.primaryDark, fontWeight: '600' },
+  backButton: { marginBottom: 12 },
+  backButtonText: { color: palette.primaryDark, fontSize: 16, fontWeight: '600' },
+  title: { fontSize: 24, fontWeight: 'bold', color: palette.primaryDark, textAlign: 'center', marginBottom: 16 },
+  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  statLabel: { color: palette.textSecondary, fontSize: 14 },
+  statValue: { color: palette.primaryDark, fontSize: 24, fontWeight: '700' },
+  search: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  listContent: { paddingBottom: 24 },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  cardTitle: { fontSize: 17, fontWeight: '700', color: '#1f2937' },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  badgeText: { color: '#ffffff', fontSize: 11, fontWeight: '700' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  label: { color: '#6b7280', fontSize: 13, fontWeight: '600' },
+  value: { color: '#1f2937', fontSize: 13, fontWeight: '700' },
+  emptyBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  emptyText: { color: palette.textSecondary, fontSize: 15 },
+  salidaButton: {
+    marginTop: 12,
+    backgroundColor: palette.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  salidaButtonText: {
+    color: palette.white,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+});

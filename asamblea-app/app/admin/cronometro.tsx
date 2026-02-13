@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
@@ -14,11 +13,11 @@ import { useLocalSearchParams, router } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { styles } from '@/src/styles/screens/admin/cronometro.styles';
 
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = Math.min(width * 0.35, 140);
 const STROKE_WIDTH = 4;
-const BUTTON_WIDTH = 260;
 
 export default function Cronometro() {
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
@@ -375,131 +374,3 @@ export default function Cronometro() {
   );
 }
 
-/* =======================
-   STYLES
-======================= */
-const styles = StyleSheet.create({
-  content: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 6,
-    paddingHorizontal: 0,
-    marginBottom: 16,
-    backgroundColor: 'transparent',
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#065f46',
-    fontWeight: '600',
-  },
-  estado: {
-    fontSize: 16,
-    marginBottom: 20,
-    fontWeight: '600',
-  },
-  circlesRow: {
-    flexDirection: 'row',
-    gap: 24,
-    marginBottom: 30,
-  },
-  circleContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleText: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  circleValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#065f46',
-  },
-  circleLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  config: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 16,
-    width: BUTTON_WIDTH,
-    alignItems: 'center',
-    gap: 16,
-  },
-  configTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 20,
-    alignItems: 'center',
-  },
-  adjust: {
-    fontSize: 28,
-    color: '#16a34a',
-    fontWeight: 'bold',
-  },
-  adjustValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  primaryButton: {
-    backgroundColor: '#16a34a',
-    paddingVertical: 14,
-    borderRadius: 12,
-    width: BUTTON_WIDTH,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  quorumBox: {
-    width: BUTTON_WIDTH,
-    alignItems: 'center',
-    backgroundColor: '#f0fdf4',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  quorumText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#065f46',
-  },
-  quorumSubtext: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 4,
-  },
-  pauseButton: {
-    backgroundColor: '#f59e0b',
-    paddingVertical: 14,
-    borderRadius: 12,
-    width: BUTTON_WIDTH,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  stopButton: {
-    backgroundColor: '#dc2626',
-    paddingVertical: 14,
-    borderRadius: 12,
-    width: BUTTON_WIDTH,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-});

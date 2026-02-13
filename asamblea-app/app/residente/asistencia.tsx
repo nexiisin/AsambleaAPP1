@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   ScrollView,
   Platform,
@@ -14,6 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { descargarComprobanteAsistencia } from '@/src/services/pdf-asistencia';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { styles } from '@/src/styles/screens/residente/asistencia.styles';
 
 export default function ResidenteAsistencia() {
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
@@ -206,53 +206,3 @@ export default function ResidenteAsistencia() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 420,
-    padding: 24,
-    borderRadius: 16,
-    backgroundColor: '#f9fafb',
-    elevation: 3,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#166534',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#16a34a',
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    marginBottom: 12,
-    backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#16a34a',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 10,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  checkbox: {
-    marginVertical: 10,
-  },
-  checkboxText: {
-    fontSize: 16,
-  },
-});

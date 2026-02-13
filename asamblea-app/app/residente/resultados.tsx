@@ -1,9 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
+import { styles as screenStyles } from '@/src/styles/screens/residente/resultados.styles';
+
+const styles = screenStyles;
 
 interface ResultStats {
   votos_si: number;
@@ -23,6 +26,7 @@ export default function Resultados() {
 
   const [propuesta, setPropuesta] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const asistenciaRedirectedRef = useRef(false);
   const [stats, setStats] = useState<ResultStats>({
     votos_si: 0,
     votos_no: 0,
@@ -151,9 +155,13 @@ export default function Resultados() {
       .channel(`asamblea-broadcast-${asambleaId}`)
       .on('broadcast', { event: 'asistencia' }, (payload) => {
         try {
+          const action = payload?.payload?.action;
+          if (action !== 'permitir-salida-anticipada') return;
           const targetId = payload?.payload?.asistenciaId;
           if (targetId && targetId === asistenciaId) {
-            router.push({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
+            if (asistenciaRedirectedRef.current) return;
+            asistenciaRedirectedRef.current = true;
+            router.replace({ pathname: '/residente/asistencia', params: { asambleaId, asistenciaId } });
           }
         } catch (e) {
           console.error('Error redirigiendo a asistencia:', e);
@@ -348,305 +356,3 @@ export default function Resultados() {
     </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { 
-    flexGrow: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 20,
-    paddingVertical: 40,
-  },
-  card: { 
-    width: '100%', 
-    maxWidth: 650, 
-    backgroundColor: '#fff', 
-    padding: 28, 
-    borderRadius: 20, 
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  icon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  title: { 
-    fontSize: 26, 
-    fontWeight: '800', 
-    marginBottom: 20, 
-    textAlign: 'center',
-    color: '#1f2937',
-  },
-  
-  // Propuesta
-  propuestaBox: {
-    width: '100%',
-    backgroundColor: '#f9fafb',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  propuestaTitulo: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  propuestaDescripcion: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-
-  // Resumen
-  summaryBox: {
-    width: '100%',
-    backgroundColor: '#f0fdf4',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    gap: 8,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4b5563',
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#16a34a',
-  },
-
-  // Gráfico
-  chartContainer: {
-    width: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  chartTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1f2937',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  columnsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    height: 160,
-    gap: 8,
-    paddingHorizontal: 4,
-    marginBottom: 8,
-  },
-  baseLine: {
-    width: '100%',
-    height: 3,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 2,
-    marginTop: -3,
-  },
-  columnWrapper: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    minHeight: 240,
-    maxWidth: 85,
-  },
-  columnBar: {
-    width: '100%',
-    height: 160,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-  },
-  columnFill: {
-    width: '100%',
-    borderRadius: 8,
-    minHeight: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  columnFillSi: {
-    backgroundColor: '#22c55e',
-  },
-  columnFillNo: {
-    backgroundColor: '#ef4444',
-  },
-  columnFillPending: {
-    backgroundColor: '#f59e0b',
-  },
-  columnFillAbsent: {
-    backgroundColor: '#9ca3af',
-  },
-  columnStats: {
-    marginTop: 10,
-    alignItems: 'center',
-    height: 40,
-  },
-  columnValue: {
-    fontSize: 19,
-    fontWeight: '900',
-    color: '#1f2937',
-  },
-  columnPercentage: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#6b7280',
-  },
-  columnLabelContainer: {
-    marginTop: 4,
-    alignItems: 'center',
-    height: 46,
-    justifyContent: 'flex-start',
-  },
-  columnLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#4b5563',
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-
-  // Resultado final
-  resultBox: {
-    width: '100%',
-    backgroundColor: '#f0fdf4',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 24,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#16a34a',
-  },
-  resultLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  resultInfo: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  resultText: {
-    fontSize: 28,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-
-  // Estilos para gráfico compacto
-  compactChartContainer: {
-    width: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  chartsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  compactColumn: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  compactBarWrapper: {
-    height: 120,
-    justifyContent: 'flex-end',
-  },
-  compactBar: {
-    width: 32,
-    height: 120,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  compactBarFill: {
-    width: '100%',
-    borderRadius: 6,
-  },
-  barFillSi: {
-    backgroundColor: '#22c55e',
-  },
-  barFillNo: {
-    backgroundColor: '#ef4444',
-  },
-  barFillPending: {
-    backgroundColor: '#f59e0b',
-  },
-  barFillAbsent: {
-    backgroundColor: '#9ca3af',
-  },
-  compactBarValue: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1f2937',
-  },
-  compactBarPercentage: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#6b7280',
-  },
-  compactBarEmoji: {
-    fontSize: 16,
-    marginVertical: 2,
-  },
-  compactBarLabel: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#4b5563',
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-
-  backBtn: { 
-    width: '100%',
-    backgroundColor: 'transparent', 
-    paddingVertical: 10, 
-    paddingHorizontal: 0, 
-    alignItems: 'center',
-  },
-  backBtnText: { 
-    color: '#065f46', 
-    fontWeight: '700',
-    fontSize: 15,
-  },
-});

@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Alert,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -17,6 +16,7 @@ import { descargarActaAsamblea } from '@/src/services/pdf-acta';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useFontSize } from '@/src/hooks/useFontSize';
+import { styles, modalStyles } from '@/src/styles/screens/admin/asamblea.styles';
 
 export default function AdminAsamblea() {
   const { isDesktop } = useResponsive();
@@ -50,6 +50,7 @@ export default function AdminAsamblea() {
   const [totalConectadosSalida, setTotalConectadosSalida] = useState(0);
   const [totalSalidasCompletadas, setTotalSalidasCompletadas] = useState(0);
   const debounceTimeoutRef = useRef<number | null>(null);
+  const exitDebounceTimeoutRef = useRef<number | null>(null);
 
   const cargarTodo = useCallback(async () => {
     if (!asambleaId) return;
@@ -282,14 +283,20 @@ export default function AdminAsamblea() {
           table: 'asistencias',
           filter: `asamblea_id=eq.${asambleaId}`,
         },
-        (payload) => {
-          console.log('📤 Cambio en asistencias (salida):', payload);
-          cargarDatosExit();
+        () => {
+          if (exitDebounceTimeoutRef.current) {
+            clearTimeout(exitDebounceTimeoutRef.current);
+          }
+          exitDebounceTimeoutRef.current = setTimeout(() => {
+            cargarDatosExit();
+            exitDebounceTimeoutRef.current = null;
+          }, 500) as unknown as number;
         }
       )
       .subscribe();
 
     return () => {
+      if (exitDebounceTimeoutRef.current) clearTimeout(exitDebounceTimeoutRef.current);
       supabase.removeChannel(exitSubscription);
     };
   }, [formularioSalidaModalVisible, asambleaId]);
@@ -330,11 +337,13 @@ export default function AdminAsamblea() {
     try {
       const chName = `asamblea-broadcast-${asambleaId}`;
       const channel = supabase.channel(chName);
+      await channel.subscribe();
       await channel.send({ 
         type: 'broadcast', 
         event: 'mostrar-formulario-salida', 
         payload: { asambleaId } 
       });
+      supabase.removeChannel(channel);
       
       // Marcar como enviado en lugar de cerrar el modal inmediatamente
       setFormularioSalidaEnviado(true);
@@ -716,7 +725,6 @@ export default function AdminAsamblea() {
                     <Text style={styles.confirmStatValue}>{totalConectadosSalida}</Text>
                   </View>
                 </View>
-
                 <Text style={styles.confirmModalWarning}>
                   ⚠️ Todos los residentes podrán rellenar el formulario de salida
                 </Text>
@@ -878,12 +886,6 @@ function AsistenciaModal({ visible, onClose, asambleaId }: any) {
   );
 }
 
-const modalStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  content: { width: '90%', maxWidth: 420, backgroundColor: '#fff', padding: 20, borderRadius: 12 },
-  btn: { backgroundColor: '#64748b', padding: 10, borderRadius: 8, alignItems: 'center', marginRight: 8 },
-});
-
 function Action({ text, color, isDesktop, onPress }: any) {
   return (
     <TouchableOpacity
@@ -894,496 +896,3 @@ function Action({ text, color, isDesktop, onPress }: any) {
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  page: { paddingVertical: 32, alignItems: 'center', paddingBottom: 120 },
-  container: { maxWidth: 1200, width: '100%', paddingHorizontal: 20 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-
-  // Header Card
-  headerCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 32,
-    marginBottom: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  headerLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  codigo: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    letterSpacing: 8,
-    color: '#10b981',
-    marginBottom: 16,
-  },
-  estadoBadge: {
-    backgroundColor: '#10b981',
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  estadoBadgeClosed: {
-    backgroundColor: '#ef4444',
-  },
-  estadoBadgeText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 14,
-    textTransform: 'uppercase',
-  },
-
-  // System Status Card
-  systemStatusCard: {
-    backgroundColor: '#1f2937',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 20,
-  },
-  systemStatusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  systemStatusIcon: {
-    fontSize: 24,
-    marginRight: 8,
-  },
-  systemStatusTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-  systemStatusValue: {
-    color: '#10b981',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  closeNowBtn: {
-    backgroundColor: '#ef4444',
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  closeNowBtnText: {
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-
-  // Stats Grid
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 20,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  statIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  statNumber: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-
-  // Status Card
-  statusCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  statusTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  statusValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  quorumAlert: {
-    backgroundColor: '#fef3c7',
-    padding: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b',
-  },
-  quorumAlertIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  quorumAlertText: {
-    flex: 1,
-    color: '#92400e',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-
-  // Debate Button
-  debateBtn: {
-    backgroundColor: '#f59e0b',
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#f59e0b',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  debateBtnDisabled: {
-    backgroundColor: '#d1d5db',
-    opacity: 0.6,
-  },
-  debateBtnText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-
-  // Management Console
-  managementConsole: {
-    marginBottom: 32,
-  },
-  consoleTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  actionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  actionCard: {
-    width: '48%',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 100,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  actionCardIcon: {
-    fontSize: 28,
-    marginBottom: 6,
-  },
-  actionCardText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-
-  // Close Assembly Button
-  closeAssemblyBtn: {
-    backgroundColor: '#ef4444',
-    padding: 18,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 24,
-    shadowColor: '#ef4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  closeAssemblyBtnText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-
-  // Estilos para el modal de confirmación
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  confirmModalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 24,
-    width: '100%',
-    maxWidth: 420,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  confirmModalHeader: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  confirmModalIcon: {
-    fontSize: 56,
-    marginBottom: 8,
-  },
-  confirmModalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1f2937',
-    textAlign: 'center',
-  },
-  confirmModalMessage: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  confirmModalStats: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    gap: 12,
-  },
-  statItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statItemLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  confirmStatValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#16a34a',
-  },
-  confirmModalWarning: {
-    fontSize: 14,
-    color: '#dc2626',
-    textAlign: 'center',
-    fontWeight: '600',
-    marginBottom: 24,
-  },
-  confirmModalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  confirmCancelButton: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-  },
-  confirmCancelButtonText: {
-    color: '#4b5563',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  confirmDeleteButton: {
-    flex: 1,
-    backgroundColor: '#dc2626',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#dc2626',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  confirmDeleteButtonDisabled: {
-    backgroundColor: '#fca5a5',
-    opacity: 0.7,
-  },
-  confirmDeleteButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  // Estilos para el modal del código
-  codigoModalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 40,
-    width: '100%',
-    maxWidth: 450,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  codigoModalTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  codigoModalCodigo: {
-    fontSize: 72,
-    fontWeight: 'bold',
-    color: '#000000',
-    letterSpacing: 12,
-    marginBottom: 32,
-    textAlign: 'center',
-  },
-  codigoModalButton: {
-    backgroundColor: '#16a34a',
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    minWidth: 150,
-  },
-  codigoModalButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
-  // Estilos para Desktop (Pantalla grande en la sala)
-  pageDesktop: {
-    paddingVertical: 48,
-    minHeight: '100vh',
-  },
-  containerDesktop: {
-    maxWidth: 1200,
-    width: '95%',
-    paddingHorizontal: 140,
-  },
-  headerCardDesktop: {
-    padding: 48,
-    marginBottom: 32,
-  },
-  codigoDesktop: {
-    fontSize: 56,
-    letterSpacing: 10,
-    marginBottom: 24,
-  },
-  estadoBadgeDesktop: {
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-  },
-  estadoBadgeTextDesktop: {
-    fontSize: 18,
-  },
-  systemStatusCardDesktop: {
-    padding: 32,
-    marginBottom: 32,
-  },
-  systemStatusValueDesktop: {
-    fontSize: 24,
-  },
-  statsGridDesktop: {
-    gap: 24,
-    marginBottom: 32,
-  },
-  statCardDesktop: {
-    padding: 32,
-  },
-  statIconDesktop: {
-    fontSize: 36,
-    marginBottom: 12,
-  },
-  statNumberDesktop: {
-    fontSize: 44,
-  },
-  statLabelDesktop: {
-    fontSize: 18,
-  },
-  statusCardDesktop: {
-    padding: 32,
-    marginBottom: 32,
-  },
-  statusTitleDesktop: {
-    fontSize: 20,
-  },
-  statusValueDesktop: {
-    fontSize: 24,
-  },
-  debateBtnDesktop: {
-    padding: 24,
-    marginBottom: 32,
-  },
-  debateBtnTextDesktop: {
-    fontSize: 22,
-  },
-  consoleTitleDesktop: {
-    fontSize: 22,
-    marginBottom: 24,
-  },
-  actionGridDesktop: {
-    gap: 20,
-  },
-  actionCardDesktop: {
-    minWidth: '31%',
-    width: 'auto',
-    padding: 28,
-    minHeight: 120,
-  },
-  actionCardIconDesktop: {
-    fontSize: 36,
-  },
-  actionCardTextDesktop: {
-    fontSize: 16,
-  },
-  closeAssemblyBtnDesktop: {
-    padding: 24,
-  },
-  closeAssemblyBtnTextDesktop: {
-    fontSize: 22,
-  },
-});

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +10,7 @@ import { router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 import { useResponsive } from '@/src/hooks/useResponsive';
+import { styles } from '@/src/styles/screens/admin/asambleas.styles';
 
 type Asamblea = {
   id: string;
@@ -91,68 +91,3 @@ export default function AsambleasList() {
   );
 }
 
-const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    alignItems: 'center',
-  },
-
-  panel: {
-    width: '100%',
-    paddingTop: 32,
-    paddingHorizontal: 16,
-    flex: 1,
-  },
-
-  backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 0,
-    marginBottom: 16,
-    alignSelf: 'flex-start',
-  },
-
-  backButtonText: {
-    color: '#065f46',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-
-  card: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 14,
-    borderLeftWidth: 5,
-    borderLeftColor: '#16a34a',
-  },
-
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-
-  cardText: {
-    fontSize: 14,
-    color: '#374151',
-  },
-  emptyBox: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  emptyText: {
-    color: '#374151',
-    fontSize: 16,
-  },
-});
