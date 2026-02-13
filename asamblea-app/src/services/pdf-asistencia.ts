@@ -210,25 +210,7 @@ export const descargarComprobanteAsistencia = async (
     `;
 
     if (Platform.OS === 'web') {
-      if (typeof window === 'undefined') {
-        throw new Error('Impresion no disponible en este entorno');
-      }
-
-      const printWindow = window.open('', '_blank', 'width=900,height=1200');
-      if (!printWindow) {
-        throw new Error('No se pudo abrir la ventana de impresion');
-      }
-
-      printWindow.document.open();
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      printWindow.focus();
-
-      printWindow.onload = () => {
-        printWindow.print();
-        printWindow.close();
-      };
-
+      await descargarComprobanteAsistenciaWeb(data, fechaFormato, firmaBase64);
       return true;
     }
 
@@ -250,4 +232,129 @@ export const descargarComprobanteAsistencia = async (
     console.error('Error generando comprobante:', error);
     throw error;
   }
+};
+
+const descargarComprobanteAsistenciaWeb = async (
+  data: AsistenciaData,
+  fechaFormato: string,
+  firmaBase64: string
+) => {
+  const jsPDF = await cargarJsPdfWeb();
+  const doc = new jsPDF();
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const left = 16;
+  const right = 16;
+  const usableWidth = pageWidth - left - right;
+  let y = 18;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(6, 95, 70);
+  doc.setFontSize(20);
+  doc.text('✓ Comprobante de Asistencia', pageWidth / 2, y, { align: 'center' });
+  y += 8;
+
+  doc.setTextColor(45, 55, 72);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Asamblea de Residentes', pageWidth / 2, y, { align: 'center' });
+  y += 8;
+
+  doc.setDrawColor(16, 185, 129);
+  doc.setLineWidth(0.6);
+  doc.line(left, y, pageWidth - right, y);
+  y += 10;
+
+  const drawField = (label: string, value: string) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(107, 114, 128);
+    doc.text(label.toUpperCase(), left, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(17, 24, 39);
+    const splitValue = doc.splitTextToSize(value, usableWidth);
+    doc.text(splitValue, left, y);
+    y += splitValue.length * 5 + 2;
+
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.3);
+    doc.line(left, y, pageWidth - right, y);
+    y += 8;
+  };
+
+  drawField('Propietario', `${data.nombrePropietario} ${data.apellidoPropietario}`);
+  drawField('Asistente', data.nombreAsistente);
+  drawField('Casa', data.numeroCasa);
+
+  if (data.esApoderado && data.casaRepresentada) {
+    drawField('Casa representada', data.casaRepresentada);
+  }
+
+  drawField('Fecha', fechaFormato);
+
+  const mensaje = data.esApoderado && data.casaRepresentada
+    ? `Confirmamos que ${data.nombreAsistente} asistió en nombre de la casa ${data.numeroCasa} y adicional como apoderado de la casa ${data.casaRepresentada} a la asamblea de residentes el ${fechaFormato}. Este comprobante certifica su participación en el proceso.`
+    : `Confirmamos que ${data.nombreAsistente} asistió en nombre de la casa ${data.numeroCasa} a la asamblea de residentes el ${fechaFormato}. Este comprobante certifica su participación en el proceso.`;
+
+  const messageBoxTop = y;
+  const messageBoxHeight = 28;
+  doc.setFillColor(240, 253, 244);
+  doc.setDrawColor(16, 185, 129);
+  doc.rect(left, messageBoxTop, usableWidth, messageBoxHeight, 'FD');
+  doc.line(left + 1, messageBoxTop, left + 1, messageBoxTop + messageBoxHeight);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(6, 95, 70);
+  doc.setFontSize(9);
+  const splitMensaje = doc.splitTextToSize(mensaje, usableWidth - 8);
+  doc.text(splitMensaje, left + 4, messageBoxTop + 6);
+  y = messageBoxTop + messageBoxHeight + 12;
+
+  doc.setDrawColor(16, 185, 129);
+  doc.setLineWidth(0.4);
+  doc.line(left, y, pageWidth - right, y);
+  y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(107, 114, 128);
+  doc.setFontSize(9);
+  doc.text('Firma Electrónica', pageWidth / 2, y, { align: 'center' });
+  y += 6;
+
+  try {
+    doc.addImage(firmaBase64, 'PNG', pageWidth / 2 - 32, y, 64, 30);
+    y += 34;
+  } catch {
+    y += 10;
+  }
+
+  doc.setFontSize(8);
+  doc.setTextColor(156, 163, 175);
+  doc.text('Documento generado automáticamente por el sistema de asamblea.', pageWidth / 2, y + 4, {
+    align: 'center',
+  });
+
+  const filename = `Comprobante_Asistencia_${data.numeroCasa}_${Date.now()}.pdf`;
+  doc.save(filename);
+};
+
+const cargarJsPdfWeb = async () => {
+  const existing = (window as any)?.jspdf?.jsPDF;
+  if (existing) return existing;
+
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('No se pudo cargar jsPDF desde CDN'));
+    document.head.appendChild(script);
+  });
+
+  const loaded = (window as any)?.jspdf?.jsPDF;
+  if (!loaded) throw new Error('jsPDF no disponible en web');
+  return loaded;
 };
