@@ -7,13 +7,13 @@ interface FontSizeContextType {
   fontSizeLevel: FontSizeLevel;
   setFontSizeLevel: (level: FontSizeLevel) => void;
   getFontSize: (baseSize: number) => number;
+  getContainerScale: () => number;
 }
 
 export const FontSizeContext = createContext<FontSizeContextType | undefined>(undefined);
 
 export const FontSizeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [fontSizeLevel, setFontSizeLevelState] = useState<FontSizeLevel>('normal');
-  const [isLoaded, setIsLoaded] = useState(false);
 
   // Cargar preferencia guardada
   useEffect(() => {
@@ -26,7 +26,6 @@ export const FontSizeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } catch (error) {
         console.error('Error loading font size preference:', error);
       }
-      setIsLoaded(true);
     };
     loadFontSize();
   }, []);
@@ -49,12 +48,17 @@ export const FontSizeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return Math.round(baseSize * multipliers[fontSizeLevel]);
   };
 
-  if (!isLoaded) {
-    return <>{children}</>;
-  }
+  const getContainerScale = (): number => {
+    const multipliers = {
+      small: 0.96,
+      normal: 1,
+      large: 1.08,
+    };
+    return multipliers[fontSizeLevel];
+  };
 
   return (
-    <FontSizeContext.Provider value={{ fontSizeLevel, setFontSizeLevel, getFontSize }}>
+    <FontSizeContext.Provider value={{ fontSizeLevel, setFontSizeLevel, getFontSize, getContainerScale }}>
       {children}
     </FontSizeContext.Provider>
   );

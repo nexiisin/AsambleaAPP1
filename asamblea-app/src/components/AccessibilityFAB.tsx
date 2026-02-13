@@ -1,9 +1,28 @@
-import React, { useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Text, Modal, Pressable } from 'react-native';
 import { useFontSize, FontSizeLevel } from '../hooks/useFontSize';
+import { useResponsive } from '../hooks/useResponsive';
 
-export const AccessibilityFAB = () => {
+const AccessibilityFabGlobalContext = createContext(false);
+
+export const AccessibilityFabGlobalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <AccessibilityFabGlobalContext.Provider value={true}>
+    {children}
+  </AccessibilityFabGlobalContext.Provider>
+);
+
+interface AccessibilityFABProps {
+  forceRender?: boolean;
+}
+
+export const AccessibilityFAB: React.FC<AccessibilityFABProps> = ({ forceRender = false }) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const hasGlobalFAB = useContext(AccessibilityFabGlobalContext);
+  const { isDesktop, isTablet } = useResponsive();
+
+  if (hasGlobalFAB && !forceRender) {
+    return null;
+  }
   
   // Intentar obtener el contexto, si no está disponible, no renderizar
   let fontSizeLevel: FontSizeLevel = 'normal';
@@ -24,15 +43,29 @@ export const AccessibilityFAB = () => {
     { level: 'large', label: 'Grande', icon: 'A' },
   ];
 
+  const fabSize = isDesktop ? 68 : isTablet ? 62 : 56;
+  const fabBottom = isDesktop ? 30 : 24;
+  const fabRight = isDesktop ? 30 : 24;
+  const modalMaxWidth = isDesktop ? 460 : isTablet ? 390 : 340;
+
   return (
     <>
       {/* Botón Flotante */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[
+          styles.fab,
+          {
+            width: fabSize,
+            height: fabSize,
+            borderRadius: fabSize / 2,
+            bottom: fabBottom,
+            right: fabRight,
+          },
+        ]}
         onPress={() => setModalVisible(true)}
         activeOpacity={0.7}
       >
-        <Text style={styles.fabText}>A</Text>
+        <Text style={[styles.fabText, { fontSize: isDesktop ? 30 : 24 }]}>A</Text>
       </TouchableOpacity>
 
       {/* Modal de Opciones */}
@@ -47,7 +80,7 @@ export const AccessibilityFAB = () => {
           onPress={() => setModalVisible(false)}
         >
           <Pressable
-            style={styles.modalContent}
+            style={[styles.modalContent, { maxWidth: modalMaxWidth }]}
             onPress={(e) => e.stopPropagation()}
           >
             <Text style={styles.modalTitle}>Tamaño de Letra</Text>
@@ -122,6 +155,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    zIndex: 9999,
   },
 
   fabText: {
