@@ -19,8 +19,6 @@ export default function ResidenteAsistencia() {
   const { asambleaId } = useLocalSearchParams<{ asambleaId: string }>();
 
   // formulario
-  const [nombrePropietario, setNombrePropietario] = useState('');
-  const [apellidoPropietario, setApellidoPropietario] = useState('');
   const [numeroCasa, setNumeroCasa] = useState('');
   const [nombreAsistente, setNombreAsistente] = useState('');
   const [esApoderado, setEsApoderado] = useState(false);
@@ -29,12 +27,7 @@ export default function ResidenteAsistencia() {
 
   const ingresarAsamblea = async () => {
     // Este formulario registra la SALIDA (cierre) de la asistencia.
-    if (
-      !nombrePropietario ||
-      !apellidoPropietario ||
-      !numeroCasa ||
-      !nombreAsistente
-    ) {
+    if (!numeroCasa || !nombreAsistente) {
       Alert.alert('Error', 'Completa todos los campos');
       return;
     }
@@ -68,9 +61,14 @@ export default function ResidenteAsistencia() {
         .eq('vivienda_id', vivienda.id)
         .single();
 
+      const { data: propietario } = await supabase
+        .from('propietarios')
+        .select('primer_nombre, primer_apellido')
+        .eq('vivienda_id', vivienda.id)
+        .single();
+
       const payload: any = {
         nombre_asistente: nombreAsistente,
-        apellido_propietario: apellidoPropietario,
         es_apoderado: esApoderado,
         vivienda_representada_id: esApoderado ? vivienda.id : null,
         formulario_cierre_completado: true,
@@ -97,7 +95,6 @@ export default function ResidenteAsistencia() {
           asamblea_id: asambleaId,
           vivienda_id: vivienda.id,
           nombre_asistente: nombreAsistente,
-          apellido_propietario: apellidoPropietario,
           es_apoderado: esApoderado,
           vivienda_representada_id: esApoderado ? vivienda.id : null,
           formulario_cierre_completado: true,
@@ -144,8 +141,8 @@ export default function ResidenteAsistencia() {
       try {
         await descargarComprobanteAsistencia({
           nombreAsistente: nombreAsistente,
-          nombrePropietario: nombrePropietario,
-          apellidoPropietario: apellidoPropietario,
+          nombrePropietario: propietario?.primer_nombre || '',
+          apellidoPropietario: propietario?.primer_apellido || '',
           numeroCasa: numeroCasa,
           casaRepresentada: esApoderado ? casaRepresentada : undefined,
           esApoderado: esApoderado,
@@ -171,20 +168,6 @@ export default function ResidenteAsistencia() {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <Text style={styles.title}>Registro para cierre de asamblea</Text>
-
-          <TextInput
-            placeholder="Nombre del propietario"
-            style={styles.input}
-            value={nombrePropietario}
-            onChangeText={setNombrePropietario}
-          />
-
-          <TextInput
-            placeholder="Apellido del propietario"
-            style={styles.input}
-            value={apellidoPropietario}
-            onChangeText={setApellidoPropietario}
-          />
 
           <TextInput
             placeholder="Número de casa"

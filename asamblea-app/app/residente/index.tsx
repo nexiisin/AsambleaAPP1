@@ -23,8 +23,6 @@ export default function ResidenteScreen() {
   const [asambleaId, setAsambleaId] = useState<string | null>(null);
 
   // formulario
-  const [nombrePropietario, setNombrePropietario] = useState('');
-  const [apellidoPropietario, setApellidoPropietario] = useState('');
   const [numeroCasa, setNumeroCasa] = useState('');
   const [nombreAsistente, setNombreAsistente] = useState('');
   const [esApoderado, setEsApoderado] = useState(false);
@@ -86,12 +84,7 @@ export default function ResidenteScreen() {
   // INGRESAR A ASAMBLEA
   // =========================
   const ingresarAsamblea = async () => {
-    if (
-      !nombrePropietario ||
-      !apellidoPropietario ||
-      !numeroCasa ||
-      !nombreAsistente
-    ) {
+    if (!numeroCasa || !nombreAsistente) {
       Alert.alert('Error', 'Completa todos los campos');
       return;
     }
@@ -122,46 +115,6 @@ export default function ResidenteScreen() {
       Alert.alert(
         'Error',
         `La vivienda ${numeroCasa} no existe en el sistema`
-      );
-      return;
-    }
-
-    // 2️⃣ Obtener propietario de esa vivienda
-    const { data: propietario, error: errorPropietario } = await supabase
-      .from('propietarios')
-      .select('primer_nombre, primer_apellido')
-      .eq('vivienda_id', vivienda.id)
-      .single();
-
-    console.log('👤 Resultado consulta propietario:', { propietario, errorPropietario });
-
-    if (!propietario || errorPropietario) {
-      setCargando(false);
-      Alert.alert(
-        'Error',
-        `No se encontró el propietario registrado para la casa ${numeroCasa}`
-      );
-      return;
-    }
-
-    // 3️⃣ Validar que nombre y apellido coincidan (case-insensitive)
-    const nombreCoincide = propietario.primer_nombre?.toLowerCase().trim() === nombrePropietario.toLowerCase().trim();
-    const apellidoCoincide = propietario.primer_apellido?.toLowerCase().trim() === apellidoPropietario.toLowerCase().trim();
-
-    console.log('🔒 Validación:', {
-      nombreBD: propietario.primer_nombre,
-      nombreIngresado: nombrePropietario,
-      nombreCoincide,
-      apellidoBD: propietario.primer_apellido,
-      apellidoIngresado: apellidoPropietario,
-      apellidoCoincide
-    });
-
-    if (!nombreCoincide || !apellidoCoincide) {
-      setCargando(false);
-      Alert.alert(
-        '❌ Datos incorrectos',
-        `Verifica los datos e intenta nuevamente.`
       );
       return;
     }
@@ -269,20 +222,6 @@ export default function ResidenteScreen() {
           <ScaledText style={styles.title}>
             Datos del asistente
           </ScaledText>
-
-          <TextInput
-            placeholder="Nombre del propietario"
-            style={styles.input}
-            value={nombrePropietario}
-            onChangeText={setNombrePropietario}
-          />
-
-          <TextInput
-            placeholder="Apellido del propietario"
-            style={styles.input}
-            value={apellidoPropietario}
-            onChangeText={setApellidoPropietario}
-          />
 
           <TextInput
             placeholder="Número de casa"
