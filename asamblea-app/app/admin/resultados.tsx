@@ -12,6 +12,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import { AccessibilityFAB } from '@/src/components/AccessibilityFAB';
 import { styles } from '@/src/styles/screens/admin/resultados.styles';
+import { useResponsive } from '@/src/hooks/useResponsive';
 
 interface ResultStats {
   votos_si: number;
@@ -33,6 +34,11 @@ export default function AdminResultados() {
   const [propuestaSeleccionada, setPropuestaSeleccionada] = useState<any>(null);
   const [stats, setStats] = useState<ResultStats | null>(null);
   const liveMode = live === '1';
+  const { width, isDesktop, isTablet, isMobile } = useResponsive();
+
+  const isLargeScreen = isDesktop;
+  const isMediumScreen = isTablet;
+  const projectorMode = isDesktop && width >= 1280;
 
   const cargarPropuestasCerradas = useCallback(async () => {
     if (!asambleaId) return;
@@ -253,10 +259,20 @@ export default function AdminResultados() {
     return (
       <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.page}>
         <ScrollView 
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isLargeScreen && styles.scrollContentDesktop,
+            isMediumScreen && styles.scrollContentTablet,
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.container}>
+          <View
+            style={[
+              styles.container,
+              isLargeScreen && styles.containerDesktop,
+              isMediumScreen && styles.containerTablet,
+            ]}
+          >
             <TouchableOpacity 
               style={styles.backButton}
               onPress={() => {
@@ -264,134 +280,285 @@ export default function AdminResultados() {
                 setStats(null);
               }}
             >
-              <Text style={styles.backButtonText}>← Volver al listado</Text>
+              <Text
+                style={[
+                  styles.backButtonText,
+                  isLargeScreen && styles.backButtonTextDesktop,
+                ]}
+              >
+                ← Volver al listado
+              </Text>
             </TouchableOpacity>
 
-            <Text style={styles.title}>📊 Resultados de votación</Text>
+            <Text
+              style={[
+                styles.title,
+                isLargeScreen && styles.titleDesktop,
+                isMediumScreen && styles.titleTablet,
+                projectorMode && styles.titleProjector,
+              ]}
+            >
+              📊 Resultados de votación
+            </Text>
+
+            {projectorMode && (
+              <View style={styles.projectorBadge}>
+                <Text style={styles.projectorBadgeText}>🎥 Modo proyector</Text>
+              </View>
+            )}
 
             {(liveMode || propuestaSeleccionada.estado === 'ABIERTA') && (
-              <View style={styles.liveBadge}>
-                <Text style={styles.liveBadgeText}>🔴 En vivo · actualizando en tiempo real</Text>
+              <View style={[styles.liveBadge, isLargeScreen && styles.liveBadgeDesktop]}>
+                <Text style={[styles.liveBadgeText, isLargeScreen && styles.liveBadgeTextDesktop]}>🔴 En vivo · actualizando en tiempo real</Text>
               </View>
             )}
             
-            <View style={styles.propuestaBox}>
-              <Text style={styles.propuestaTitulo}>{propuestaSeleccionada.titulo}</Text>
+            <View style={[styles.propuestaBox, isLargeScreen && styles.propuestaBoxDesktop]}>
+              <Text style={[styles.propuestaTitulo, isLargeScreen && styles.propuestaTituloDesktop]}>{propuestaSeleccionada.titulo}</Text>
               {propuestaSeleccionada.descripcion && (
-                <Text style={styles.propuestaDescripcion}>{propuestaSeleccionada.descripcion}</Text>
+                <Text style={[styles.propuestaDescripcion, isLargeScreen && styles.propuestaDescripcionDesktop]}>{propuestaSeleccionada.descripcion}</Text>
               )}
             </View>
 
-            {/* Resumen de participación */}
-            <View style={styles.summaryBox}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Total viviendas:</Text>
-                <Text style={styles.summaryValue}>{stats.total_viviendas}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Asistentes registrados:</Text>
-                <Text style={styles.summaryValue}>{stats.total_asistentes}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Total votos emitidos:</Text>
-                <Text style={styles.summaryValue}>{totalVotos}</Text>
-              </View>
-            </View>
+            {isLargeScreen ? (
+              <View style={[styles.desktopMainGrid, projectorMode && styles.desktopMainGridProjector]}>
+                <View style={styles.desktopChartColumn}>
+                  <View style={[
+                    styles.compactChartContainer,
+                    styles.compactChartContainerDesktop,
+                    styles.compactChartContainerDesktopStretch,
+                    projectorMode && styles.compactChartContainerProjector,
+                  ]}>
+                    <View style={[styles.chartsRow, styles.chartsRowDesktop]}>
+                      {/* Barra SI */}
+                      <View style={[styles.compactColumn, styles.compactColumnDesktop]}>
+                        <View style={[styles.compactBarWrapper, styles.compactBarWrapperDesktop, projectorMode && styles.compactBarWrapperProjector]}>
+                          <View style={[styles.compactBar, styles.compactBarDesktop, projectorMode && styles.compactBarProjector]}>
+                            <View
+                              style={[
+                                styles.compactBarFill,
+                                styles.barFillSi,
+                                { height: `${Math.min(100, totalAsistentes > 0 ? (stats.votos_si / totalAsistentes) * 100 : 0)}%` }
+                              ]}
+                            />
+                          </View>
+                        </View>
+                        <Text style={[styles.compactBarValue, styles.compactBarValueDesktop, projectorMode && styles.compactBarValueProjector]}>{stats.votos_si}</Text>
+                        <Text style={[styles.compactBarPercentage, styles.compactBarPercentageDesktop, projectorMode && styles.compactBarPercentageProjector]}>{porcentajeSi}%</Text>
+                        <Text style={[styles.compactBarEmoji, styles.compactBarEmojiDesktop, projectorMode && styles.compactBarEmojiProjector]}>👍</Text>
+                        <Text style={[styles.compactBarLabel, styles.compactBarLabelDesktop, projectorMode && styles.compactBarLabelProjector]}>SÍ</Text>
+                      </View>
 
-            {/* Gráfico de columnas compacto */}
-            <View style={styles.compactChartContainer}>
-              <View style={styles.chartsRow}>
-                {/* Barra SI */}
-                <View style={styles.compactColumn}>
-                  <View style={styles.compactBarWrapper}>
-                    <View style={styles.compactBar}>
-                      <View 
-                        style={[
-                          styles.compactBarFill,
-                          styles.barFillSi,
-                          { height: `${Math.min(100, totalAsistentes > 0 ? (stats.votos_si / totalAsistentes) * 100 : 0)}%` }
-                        ]}
-                      />
+                      {/* Barra NO */}
+                      <View style={[styles.compactColumn, styles.compactColumnDesktop]}>
+                        <View style={[styles.compactBarWrapper, styles.compactBarWrapperDesktop, projectorMode && styles.compactBarWrapperProjector]}>
+                          <View style={[styles.compactBar, styles.compactBarDesktop, projectorMode && styles.compactBarProjector]}>
+                            <View
+                              style={[
+                                styles.compactBarFill,
+                                styles.barFillNo,
+                                { height: `${Math.min(100, totalAsistentes > 0 ? (stats.votos_no / totalAsistentes) * 100 : 0)}%` }
+                              ]}
+                            />
+                          </View>
+                        </View>
+                        <Text style={[styles.compactBarValue, styles.compactBarValueDesktop, projectorMode && styles.compactBarValueProjector]}>{stats.votos_no}</Text>
+                        <Text style={[styles.compactBarPercentage, styles.compactBarPercentageDesktop, projectorMode && styles.compactBarPercentageProjector]}>{porcentajeNo}%</Text>
+                        <Text style={[styles.compactBarEmoji, styles.compactBarEmojiDesktop, projectorMode && styles.compactBarEmojiProjector]}>👎</Text>
+                        <Text style={[styles.compactBarLabel, styles.compactBarLabelDesktop, projectorMode && styles.compactBarLabelProjector]}>NO</Text>
+                      </View>
+
+                      {/* Barra No votaron */}
+                      <View style={[styles.compactColumn, styles.compactColumnDesktop]}>
+                        <View style={[styles.compactBarWrapper, styles.compactBarWrapperDesktop, projectorMode && styles.compactBarWrapperProjector]}>
+                          <View style={[styles.compactBar, styles.compactBarDesktop, projectorMode && styles.compactBarProjector]}>
+                            <View
+                              style={[
+                                styles.compactBarFill,
+                                styles.barFillPending,
+                                { height: `${Math.min(100, totalAsistentes > 0 ? (stats.no_votaron / totalAsistentes) * 100 : 0)}%` }
+                              ]}
+                            />
+                          </View>
+                        </View>
+                        <Text style={[styles.compactBarValue, styles.compactBarValueDesktop, projectorMode && styles.compactBarValueProjector]}>{stats.no_votaron}</Text>
+                        <Text style={[styles.compactBarPercentage, styles.compactBarPercentageDesktop, projectorMode && styles.compactBarPercentageProjector]}>{porcentajeNoVotaron}%</Text>
+                        <Text style={[styles.compactBarEmoji, styles.compactBarEmojiDesktop, projectorMode && styles.compactBarEmojiProjector]}>⏳</Text>
+                        <Text style={[styles.compactBarLabel, styles.compactBarLabelDesktop, projectorMode && styles.compactBarLabelProjector]}>No votaron</Text>
+                      </View>
+
+                      {/* Barra No asistentes */}
+                      <View style={[styles.compactColumn, styles.compactColumnDesktop]}>
+                        <View style={[styles.compactBarWrapper, styles.compactBarWrapperDesktop, projectorMode && styles.compactBarWrapperProjector]}>
+                          <View style={[styles.compactBar, styles.compactBarDesktop, projectorMode && styles.compactBarProjector]}>
+                            <View
+                              style={[
+                                styles.compactBarFill,
+                                styles.barFillAbsent,
+                                { height: `${Math.min(100, stats.total_viviendas > 0 ? (stats.no_asistentes / stats.total_viviendas) * 100 : 0)}%` }
+                              ]}
+                            />
+                          </View>
+                        </View>
+                        <Text style={[styles.compactBarValue, styles.compactBarValueDesktop, projectorMode && styles.compactBarValueProjector]}>{stats.no_asistentes}</Text>
+                        <Text style={[styles.compactBarPercentage, styles.compactBarPercentageDesktop, projectorMode && styles.compactBarPercentageProjector]}>{porcentajeNoAsistentes}%</Text>
+                        <Text style={[styles.compactBarEmoji, styles.compactBarEmojiDesktop, projectorMode && styles.compactBarEmojiProjector]}>❌</Text>
+                        <Text style={[styles.compactBarLabel, styles.compactBarLabelDesktop, projectorMode && styles.compactBarLabelProjector]}>No asistieron</Text>
+                      </View>
                     </View>
                   </View>
-                  <Text style={styles.compactBarValue}>{stats.votos_si}</Text>
-                  <Text style={styles.compactBarPercentage}>{porcentajeSi}%</Text>
-                  <Text style={styles.compactBarEmoji}>👍</Text>
-                  <Text style={styles.compactBarLabel}>SÍ</Text>
                 </View>
 
-                {/* Barra NO */}
-                <View style={styles.compactColumn}>
-                  <View style={styles.compactBarWrapper}>
-                    <View style={styles.compactBar}>
-                      <View 
-                        style={[
-                          styles.compactBarFill,
-                          styles.barFillNo,
-                          { height: `${Math.min(100, totalAsistentes > 0 ? (stats.votos_no / totalAsistentes) * 100 : 0)}%` }
-                        ]}
-                      />
+                <View style={styles.desktopInfoColumn}>
+                  <View style={[styles.summaryBox, styles.summaryBoxDesktop, styles.summaryBoxDesktopStretch, projectorMode && styles.summaryBoxProjector]}>
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, styles.summaryLabelDesktop, projectorMode && styles.summaryLabelProjector]}>Total viviendas:</Text>
+                      <Text style={[styles.summaryValue, styles.summaryValueDesktop, projectorMode && styles.summaryValueProjector]}>{stats.total_viviendas}</Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, styles.summaryLabelDesktop, projectorMode && styles.summaryLabelProjector]}>Asistentes registrados:</Text>
+                      <Text style={[styles.summaryValue, styles.summaryValueDesktop, projectorMode && styles.summaryValueProjector]}>{stats.total_asistentes}</Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={[styles.summaryLabel, styles.summaryLabelDesktop, projectorMode && styles.summaryLabelProjector]}>Total votos emitidos:</Text>
+                      <Text style={[styles.summaryValue, styles.summaryValueDesktop, projectorMode && styles.summaryValueProjector]}>{totalVotos}</Text>
                     </View>
                   </View>
-                  <Text style={styles.compactBarValue}>{stats.votos_no}</Text>
-                  <Text style={styles.compactBarPercentage}>{porcentajeNo}%</Text>
-                  <Text style={styles.compactBarEmoji}>👎</Text>
-                  <Text style={styles.compactBarLabel}>NO</Text>
-                </View>
 
-                {/* Barra No votaron */}
-                <View style={styles.compactColumn}>
-                  <View style={styles.compactBarWrapper}>
-                    <View style={styles.compactBar}>
-                      <View 
-                        style={[
-                          styles.compactBarFill,
-                          styles.barFillPending,
-                          { height: `${Math.min(100, totalAsistentes > 0 ? (stats.no_votaron / totalAsistentes) * 100 : 0)}%` }
-                        ]}
-                      />
-                    </View>
+                  <View style={[styles.resultBox, styles.resultBoxDesktop, styles.resultBoxDesktopStretch, projectorMode && styles.resultBoxProjector]}>
+                    <Text style={[styles.resultLabel, styles.resultLabelDesktop, projectorMode && styles.resultLabelProjector]}>Resultado de la votación:</Text>
+                    <Text style={[styles.resultInfo, styles.resultInfoDesktop, projectorMode && styles.resultInfoProjector]}>
+                      Se necesitan {votosNecesarios} votos de {totalAsistentes} asistentes (50% + 1)
+                    </Text>
+                    <Text
+                      style={[
+                        styles.resultText,
+                        styles.resultTextDesktop,
+                        projectorMode && styles.resultTextProjector,
+                        { color: aprobada ? '#16a34a' : '#dc2626' }
+                      ]}
+                    >
+                      {aprobada ? '✅ APROBADA' : '❌ RECHAZADA'}
+                    </Text>
                   </View>
-                  <Text style={styles.compactBarValue}>{stats.no_votaron}</Text>
-                  <Text style={styles.compactBarPercentage}>{porcentajeNoVotaron}%</Text>
-                  <Text style={styles.compactBarEmoji}>⏳</Text>
-                  <Text style={styles.compactBarLabel}>No votaron</Text>
-                </View>
-
-                {/* Barra No asistentes */}
-                <View style={styles.compactColumn}>
-                  <View style={styles.compactBarWrapper}>
-                    <View style={styles.compactBar}>
-                      <View 
-                        style={[
-                          styles.compactBarFill,
-                          styles.barFillAbsent,
-                          { height: `${Math.min(100, stats.total_viviendas > 0 ? (stats.no_asistentes / stats.total_viviendas) * 100 : 0)}%` }
-                        ]}
-                      />
-                    </View>
-                  </View>
-                  <Text style={styles.compactBarValue}>{stats.no_asistentes}</Text>
-                  <Text style={styles.compactBarPercentage}>{porcentajeNoAsistentes}%</Text>
-                  <Text style={styles.compactBarEmoji}>❌</Text>
-                  <Text style={styles.compactBarLabel}>No asistieron</Text>
                 </View>
               </View>
-            </View>
+            ) : (
+              <>
+                {/* Resumen de participación */}
+                <View style={styles.summaryBox}>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Total viviendas:</Text>
+                    <Text style={styles.summaryValue}>{stats.total_viviendas}</Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Asistentes registrados:</Text>
+                    <Text style={styles.summaryValue}>{stats.total_asistentes}</Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Total votos emitidos:</Text>
+                    <Text style={styles.summaryValue}>{totalVotos}</Text>
+                  </View>
+                </View>
 
-            {/* Resultado final */}
-            <View style={styles.resultBox}>
-              <Text style={styles.resultLabel}>Resultado de la votación:</Text>
-              <Text style={styles.resultInfo}>
-                Se necesitan {votosNecesarios} votos de {totalAsistentes} asistentes (50% + 1)
-              </Text>
-              <Text style={[
-                styles.resultText,
-                { color: aprobada ? '#16a34a' : '#dc2626' }
-              ]}>
-                {aprobada ? '✅ APROBADA' : '❌ RECHAZADA'}
-              </Text>
-            </View>
+                {/* Gráfico de columnas compacto */}
+                <View style={styles.compactChartContainer}>
+                  <View style={styles.chartsRow}>
+                    {/* Barra SI */}
+                    <View style={styles.compactColumn}>
+                      <View style={styles.compactBarWrapper}>
+                        <View style={styles.compactBar}>
+                          <View
+                            style={[
+                              styles.compactBarFill,
+                              styles.barFillSi,
+                              { height: `${Math.min(100, totalAsistentes > 0 ? (stats.votos_si / totalAsistentes) * 100 : 0)}%` }
+                            ]}
+                          />
+                        </View>
+                      </View>
+                      <Text style={styles.compactBarValue}>{stats.votos_si}</Text>
+                      <Text style={styles.compactBarPercentage}>{porcentajeSi}%</Text>
+                      <Text style={styles.compactBarEmoji}>👍</Text>
+                      <Text style={styles.compactBarLabel}>SÍ</Text>
+                    </View>
+
+                    {/* Barra NO */}
+                    <View style={styles.compactColumn}>
+                      <View style={styles.compactBarWrapper}>
+                        <View style={styles.compactBar}>
+                          <View
+                            style={[
+                              styles.compactBarFill,
+                              styles.barFillNo,
+                              { height: `${Math.min(100, totalAsistentes > 0 ? (stats.votos_no / totalAsistentes) * 100 : 0)}%` }
+                            ]}
+                          />
+                        </View>
+                      </View>
+                      <Text style={styles.compactBarValue}>{stats.votos_no}</Text>
+                      <Text style={styles.compactBarPercentage}>{porcentajeNo}%</Text>
+                      <Text style={styles.compactBarEmoji}>👎</Text>
+                      <Text style={styles.compactBarLabel}>NO</Text>
+                    </View>
+
+                    {/* Barra No votaron */}
+                    <View style={styles.compactColumn}>
+                      <View style={styles.compactBarWrapper}>
+                        <View style={styles.compactBar}>
+                          <View
+                            style={[
+                              styles.compactBarFill,
+                              styles.barFillPending,
+                              { height: `${Math.min(100, totalAsistentes > 0 ? (stats.no_votaron / totalAsistentes) * 100 : 0)}%` }
+                            ]}
+                          />
+                        </View>
+                      </View>
+                      <Text style={styles.compactBarValue}>{stats.no_votaron}</Text>
+                      <Text style={styles.compactBarPercentage}>{porcentajeNoVotaron}%</Text>
+                      <Text style={styles.compactBarEmoji}>⏳</Text>
+                      <Text style={styles.compactBarLabel}>No votaron</Text>
+                    </View>
+
+                    {/* Barra No asistentes */}
+                    <View style={styles.compactColumn}>
+                      <View style={styles.compactBarWrapper}>
+                        <View style={styles.compactBar}>
+                          <View
+                            style={[
+                              styles.compactBarFill,
+                              styles.barFillAbsent,
+                              { height: `${Math.min(100, stats.total_viviendas > 0 ? (stats.no_asistentes / stats.total_viviendas) * 100 : 0)}%` }
+                            ]}
+                          />
+                        </View>
+                      </View>
+                      <Text style={styles.compactBarValue}>{stats.no_asistentes}</Text>
+                      <Text style={styles.compactBarPercentage}>{porcentajeNoAsistentes}%</Text>
+                      <Text style={styles.compactBarEmoji}>❌</Text>
+                      <Text style={styles.compactBarLabel}>No asistieron</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Resultado final */}
+                <View style={styles.resultBox}>
+                  <Text style={styles.resultLabel}>Resultado de la votación:</Text>
+                  <Text style={styles.resultInfo}>
+                    Se necesitan {votosNecesarios} votos de {totalAsistentes} asistentes (50% + 1)
+                  </Text>
+                  <Text
+                    style={[
+                      styles.resultText,
+                      { color: aprobada ? '#16a34a' : '#dc2626' }
+                    ]}
+                  >
+                    {aprobada ? '✅ APROBADA' : '❌ RECHAZADA'}
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
         </ScrollView>
         <AccessibilityFAB />
@@ -401,11 +568,17 @@ export default function AdminResultados() {
 
   return (
     <LinearGradient colors={['#5fba8b', '#d9f3e2']} style={styles.page}>
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          isLargeScreen && styles.containerDesktop,
+          isMediumScreen && styles.containerTablet,
+        ]}
+      >
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>← Volver</Text>
+          <Text style={[styles.backButtonText, isLargeScreen && styles.backButtonTextDesktop]}>← Volver</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>📊 Resultados de propuestas</Text>
+        <Text style={[styles.title, isLargeScreen && styles.titleDesktop, isMediumScreen && styles.titleTablet]}>📊 Resultados de propuestas</Text>
 
         {propuestas.length === 0 ? (
           <View style={styles.emptyBox}>
@@ -420,7 +593,7 @@ export default function AdminResultados() {
             contentContainerStyle={{ paddingBottom: 40, alignItems: 'center', width: '100%' }}
             style={{ width: '100%' }}
             renderItem={({ item, index }) => (
-              <View style={styles.card}>
+              <View style={[styles.card, isLargeScreen && styles.cardDesktop]}>
                 <View style={styles.cardHeader}>
                   <View style={styles.orderBadge}>
                     <Text style={styles.orderBadgeText}>#{index + 1}</Text>
@@ -437,20 +610,20 @@ export default function AdminResultados() {
                   ) : null}
                 </View>
 
-                <View style={styles.cardActions}>
+                <View style={[styles.cardActions, isMobile && styles.cardActionsMobile]}>
                   <TouchableOpacity 
-                    style={styles.statsBtn} 
+                    style={[styles.statsBtn, isMobile && styles.actionBtnMobile]} 
                     onPress={() => handleVerEstadisticas(item)}
                   >
-                    <Text style={styles.statsBtnText}>📈 Ver estadísticas</Text>
+                    <Text style={[styles.statsBtnText, isLargeScreen && styles.actionBtnTextDesktop]}>📈 Ver estadísticas</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity 
-                    style={styles.publishBtn} 
+                    style={[styles.publishBtn, isMobile && styles.actionBtnMobile]} 
                     onPress={() => handleMostrarResultados(item)}
                     disabled={cargando}
                   >
-                    <Text style={styles.publishBtnText}>
+                    <Text style={[styles.publishBtnText, isLargeScreen && styles.actionBtnTextDesktop]}>
                       📊 Mostrar a residentes
                     </Text>
                   </TouchableOpacity>

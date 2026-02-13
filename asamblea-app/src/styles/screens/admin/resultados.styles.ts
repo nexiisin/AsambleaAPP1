@@ -4,10 +4,22 @@ import { palette } from '@/src/styles/tokens';
 export const styles = StyleSheet.create({
   page: { flex: 1, alignItems: 'center' },
   container: { width: '100%', maxWidth: 700, padding: 16 },
+  containerTablet: { maxWidth: 960, paddingHorizontal: 24 },
+  containerDesktop: { maxWidth: '100%', paddingHorizontal: 36, paddingBottom: 24 },
   scrollContent: {
     paddingVertical: 20,
   },
+  scrollContentTablet: {
+    paddingVertical: 28,
+  },
+  scrollContentDesktop: {
+    paddingVertical: 36,
+    flexGrow: 1,
+  },
   title: { fontSize: 26, fontWeight: '800', marginBottom: 24, color: palette.textPrimary, textAlign: 'center' },
+  titleTablet: { fontSize: 32, marginBottom: 28 },
+  titleDesktop: { fontSize: 44, marginBottom: 36 },
+  titleProjector: { fontSize: 58, marginBottom: 16 },
   backButton: {
     backgroundColor: 'transparent',
     paddingVertical: 6,
@@ -19,6 +31,9 @@ export const styles = StyleSheet.create({
     color: palette.primaryDark,
     fontWeight: '600',
     fontSize: 14,
+  },
+  backButtonTextDesktop: {
+    fontSize: 18,
   },
   emptyBox: {
     backgroundColor: '#fff',
@@ -48,6 +63,11 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 6,
     elevation: 3,
+  },
+  cardDesktop: {
+    maxWidth: 980,
+    padding: 28,
+    borderRadius: 20,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -81,6 +101,9 @@ export const styles = StyleSheet.create({
   cardText: { color: '#4b5563', marginBottom: 12, fontSize: 15, lineHeight: 22 },
   cardBody: { marginBottom: 16 },
   cardActions: { flexDirection: 'row', gap: 10, justifyContent: 'flex-end' },
+  cardActionsMobile: { flexDirection: 'column', alignItems: 'stretch' },
+  actionBtnMobile: { width: '100%', alignItems: 'center' },
+  actionBtnTextDesktop: { fontSize: 18 },
   statsBtn: {
     backgroundColor: '#f3f4f6',
     paddingVertical: 12,
@@ -109,6 +132,11 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 20,
   },
+  propuestaBoxDesktop: {
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 26,
+  },
   propuestaTitulo: {
     fontSize: 18,
     fontWeight: '700',
@@ -116,11 +144,19 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
+  propuestaTituloDesktop: {
+    fontSize: 32,
+    marginBottom: 12,
+  },
   propuestaDescripcion: {
     fontSize: 14,
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  propuestaDescripcionDesktop: {
+    fontSize: 19,
+    lineHeight: 28,
   },
   summaryBox: {
     width: '100%',
@@ -129,6 +165,12 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 24,
     gap: 8,
+  },
+  summaryBoxDesktop: {
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 28,
+    gap: 14,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -140,10 +182,16 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4b5563',
   },
+  summaryLabelDesktop: {
+    fontSize: 20,
+  },
   summaryValue: {
     fontSize: 16,
     fontWeight: '700',
     color: palette.primary,
+  },
+  summaryValueDesktop: {
+    fontSize: 28,
   },
   chartContainer: {
     width: '100%',
@@ -226,9 +274,17 @@ export const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: palette.primary,
   },
+  resultBoxDesktop: {
+    padding: 28,
+    borderRadius: 16,
+    marginBottom: 32,
+  },
   resultLabel: { fontSize: 16, fontWeight: '600', color: '#6b7280', marginBottom: 4 },
+  resultLabelDesktop: { fontSize: 24, marginBottom: 8 },
   resultInfo: { fontSize: 14, color: '#6b7280', marginBottom: 8, textAlign: 'center' },
+  resultInfoDesktop: { fontSize: 19, marginBottom: 14 },
   resultText: { fontSize: 28, fontWeight: '800', textAlign: 'center' },
+  resultTextDesktop: { fontSize: 52 },
   liveBadge: {
     alignSelf: 'center',
     backgroundColor: '#fee2e2',
@@ -239,10 +295,33 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 12,
   },
+  liveBadgeDesktop: {
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    marginBottom: 18,
+  },
   liveBadgeText: {
     color: palette.danger,
     fontSize: 12,
     fontWeight: '700',
+  },
+  liveBadgeTextDesktop: {
+    fontSize: 17,
+  },
+  projectorBadge: {
+    alignSelf: 'center',
+    backgroundColor: '#dcfce7',
+    borderWidth: 1,
+    borderColor: palette.primary,
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  projectorBadgeText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#166534',
   },
   compactChartContainer: {
     width: '100%',
@@ -256,9 +335,26 @@ export const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  compactChartContainerDesktop: {
+    borderRadius: 22,
+    padding: 30,
+    marginBottom: 0,
+  },
+  compactChartContainerDesktopStretch: {
+    flex: 1,
+    minHeight: 620,
+  },
+  compactChartContainerProjector: {
+    minHeight: 760,
+    padding: 36,
+  },
   chartsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', gap: 4 },
+  chartsRowDesktop: { gap: 20 },
   compactColumn: { flex: 1, alignItems: 'center', gap: 2 },
+  compactColumnDesktop: { gap: 8 },
   compactBarWrapper: { height: 120, justifyContent: 'flex-end' },
+  compactBarWrapperDesktop: { height: 260 },
+  compactBarWrapperProjector: { height: 340 },
   compactBar: {
     width: 32,
     height: 120,
@@ -267,13 +363,81 @@ export const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'flex-end',
   },
+  compactBarDesktop: {
+    width: 72,
+    height: 260,
+    borderRadius: 10,
+  },
+  compactBarProjector: {
+    width: 92,
+    height: 340,
+    borderRadius: 12,
+  },
   compactBarFill: { width: '100%', borderRadius: 6 },
   barFillSi: { backgroundColor: palette.primary },
   barFillNo: { backgroundColor: palette.danger },
   barFillPending: { backgroundColor: '#f59e0b' },
   barFillAbsent: { backgroundColor: '#9ca3af' },
   compactBarValue: { fontSize: 14, fontWeight: '800', color: '#1f2937' },
+  compactBarValueDesktop: { fontSize: 34 },
+  compactBarValueProjector: { fontSize: 44 },
   compactBarPercentage: { fontSize: 10, fontWeight: '700', color: '#6b7280' },
+  compactBarPercentageDesktop: { fontSize: 17 },
+  compactBarPercentageProjector: { fontSize: 24 },
   compactBarEmoji: { fontSize: 16, marginVertical: 2 },
+  compactBarEmojiDesktop: { fontSize: 28, marginVertical: 4 },
+  compactBarEmojiProjector: { fontSize: 34, marginVertical: 8 },
   compactBarLabel: { fontSize: 9, fontWeight: '600', color: '#4b5563', textAlign: 'center', lineHeight: 12 },
+  compactBarLabelDesktop: { fontSize: 16, lineHeight: 20 },
+  compactBarLabelProjector: { fontSize: 21, lineHeight: 26, fontWeight: '800' },
+  desktopMainGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 24,
+    minHeight: 680,
+  },
+  desktopMainGridProjector: {
+    minHeight: 840,
+    gap: 30,
+  },
+  desktopChartColumn: {
+    flex: 2,
+  },
+  desktopInfoColumn: {
+    flex: 1,
+    gap: 18,
+    justifyContent: 'space-between',
+  },
+  summaryBoxDesktopStretch: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  summaryBoxProjector: {
+    padding: 30,
+  },
+  resultBoxDesktopStretch: {
+    flex: 1,
+    marginBottom: 0,
+    justifyContent: 'center',
+  },
+  resultBoxProjector: {
+    padding: 34,
+  },
+  summaryLabelProjector: {
+    fontSize: 24,
+  },
+  summaryValueProjector: {
+    fontSize: 40,
+  },
+  resultLabelProjector: {
+    fontSize: 30,
+  },
+  resultInfoProjector: {
+    fontSize: 24,
+    lineHeight: 34,
+  },
+  resultTextProjector: {
+    fontSize: 72,
+  },
 });
