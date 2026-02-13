@@ -185,15 +185,6 @@ export default function Cronometro() {
      ACCIONES
   ======================= */
   const iniciarCronometro = async () => {
-    if (!quorumCumplido) {
-      const minimo = totalViviendas ? Math.floor(totalViviendas / 2) + 1 : 0;
-      Alert.alert(
-        'Quórum insuficiente',
-        `No se puede iniciar el debate. Se requiere mínimo 50% + 1 vivienda (${minimo} viviendas).`
-      );
-      return;
-    }
-
     await supabase.rpc('iniciar_cronometro_debate', {
       p_asamblea_id: asambleaId,
       p_duracion_segundos: minutos * 60,
@@ -324,9 +315,8 @@ export default function Cronometro() {
           </View>
 
           <TouchableOpacity
-            style={[styles.primaryButton, !quorumCumplido && styles.disabledButton]}
+            style={styles.primaryButton}
             onPress={iniciarCronometro}
-            disabled={!quorumCumplido}
           >
             <Text style={styles.buttonText}>▶ Iniciar</Text>
           </TouchableOpacity>

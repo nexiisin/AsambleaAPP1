@@ -280,6 +280,12 @@ export default function SalaEspera() {
         (payload) => {
           const newPropActiva = payload.new?.propuesta_activa_id;
           const newPropResultados = payload.new?.propuesta_resultados_id;
+          const cronometroCambio =
+            payload.new?.cronometro_activo !== payload.old?.cronometro_activo ||
+            payload.new?.cronometro_pausado !== payload.old?.cronometro_pausado ||
+            payload.new?.cronometro_inicio !== payload.old?.cronometro_inicio ||
+            payload.new?.cronometro_duracion_segundos !== payload.old?.cronometro_duracion_segundos ||
+            payload.new?.cronometro_tiempo_pausado !== payload.old?.cronometro_tiempo_pausado;
           
           // Guardar refs para el contador local
           crieroCierreIngresoRef.current = payload.new?.hora_cierre_ingreso;
@@ -290,11 +296,19 @@ export default function SalaEspera() {
             duracion: payload.new?.cronometro_duracion_segundos,
           };
           
-          // Solo recargar si cambió propuesta_activa_id o propuesta_resultados_id
-          if (newPropActiva !== lastPropuestaActiveRef.current || newPropResultados !== lastPropuestaResultadosRefRealtime.current) {
+          // Recargar si cambió propuesta activa/resultados o cualquier estado del cronómetro
+          if (
+            newPropActiva !== lastPropuestaActiveRef.current ||
+            newPropResultados !== lastPropuestaResultadosRefRealtime.current ||
+            cronometroCambio
+          ) {
             lastPropuestaActiveRef.current = newPropActiva;
             lastPropuestaResultadosRefRealtime.current = newPropResultados;
-            console.log('🔔 Cambio detectado en propuesta activa/resultados:', { newPropActiva, newPropResultados });
+            console.log('🔔 Cambio detectado en asamblea:', {
+              newPropActiva,
+              newPropResultados,
+              cronometroCambio,
+            });
             verificarEstado();
           }
         }

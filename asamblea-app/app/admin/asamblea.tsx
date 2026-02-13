@@ -407,19 +407,6 @@ export default function AdminAsamblea() {
       <ScrollView contentContainerStyle={[styles.page, isDesktop && styles.pageDesktop]}>
         <View style={[styles.container, isDesktop && styles.containerDesktop]}>
 
-        {/* HEADER CON CÓDIGO */}
-        <View style={[styles.headerCard, isDesktop && styles.headerCardDesktop]}>
-          <Text style={[styles.headerLabel, dynamicStyles.headerLabel]}>Código de acceso</Text>
-          <Text style={[styles.codigo, isDesktop && styles.codigoDesktop, dynamicStyles.codigo, isDesktop && dynamicStyles.codigoDesktop]}>{asamblea.codigo_acceso}</Text>
-          <View style={[
-            styles.estadoBadge, 
-            asamblea.estado === 'CERRADA' && styles.estadoBadgeClosed,
-            isDesktop && styles.estadoBadgeDesktop
-          ]}>
-            <Text style={[styles.estadoBadgeText, isDesktop && styles.estadoBadgeTextDesktop, dynamicStyles.estadoBadgeText, isDesktop && dynamicStyles.estadoBadgeTextDesktop]}>{asamblea.estado}</Text>
-          </View>
-        </View>
-
         {/* ESTADO DEL SISTEMA */}
         <View style={[styles.systemStatusCard, isDesktop && styles.systemStatusCardDesktop]}>
           <View style={styles.systemStatusHeader}>
@@ -479,10 +466,8 @@ export default function AdminAsamblea() {
         <TouchableOpacity
           style={[
             styles.debateBtn, 
-            !quorumCumplido && styles.debateBtnDisabled,
             isDesktop && styles.debateBtnDesktop
           ]}
-          disabled={!quorumCumplido}
           onPress={() =>
             router.push({
               pathname: '/admin/cronometro',
