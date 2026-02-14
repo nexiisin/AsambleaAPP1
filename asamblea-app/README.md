@@ -218,7 +218,50 @@ npm run web            # Inicia en navegador
 # Utilidades
 npm run lint           # Ejecuta ESLint
 npm run reset-project  # Resetea el proyecto (limpia cache)
+npm run stress:web -- --asamblea-id <UUID> --users 164 --ramp-seconds 15
 ```
+
+### Prueba de estrés web (164 usuarios)
+
+El comando `stress:web` simula el flujo completo de asamblea para web:
+
+1. Validación de asamblea por cada usuario
+2. Registro concurrente de asistencia
+3. Consultas de sala de espera
+4. Creación e inicio de votación (admin)
+5. Emisión de votos concurrentes por RPC
+6. Cierre de votación y publicación de resultados (admin)
+7. Consulta concurrente de resultados
+8. Registro de salida de asistentes
+
+Ejemplos:
+
+```bash
+# Por ID de asamblea
+npm run stress:web -- --asamblea-id 00000000-0000-0000-0000-000000000000 --users 164 --ramp-seconds 15
+
+# Por código de acceso
+npm run stress:web -- --codigo A1234 --users 164
+
+# Sin parámetros (crea asamblea automática de prueba)
+npm run stress:web -- --users 164
+
+# Ejecutar y limpiar datos creados por la prueba
+npm run stress:web -- --asamblea-id <UUID> --cleanup true
+```
+
+Variables requeridas en `.env`:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=...
+# Recomendado para pruebas de carga con acciones admin/RPC
+SUPABASE_SERVICE_ROLE_KEY=...
+
+# Alternativa (puede fallar por RLS/permisos en algunos flujos)
+EXPO_PUBLIC_SUPABASE_ANON_KEY=...
+```
+
+El script genera un reporte en `reports/stress-report-*.json` con latencias `p50/p95`, tasa de éxito y fallos por operación.
 
 ---
 

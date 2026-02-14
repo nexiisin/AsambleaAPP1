@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "export-web": "expo export -p web",
     "build": "expo export -p web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "stress:web": "node ./tools/stress-web-asamblea.mjs"
   },
   "dependencies": {
     "@expo/config": "^12.0.13",

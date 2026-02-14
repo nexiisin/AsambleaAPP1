@@ -39,6 +39,7 @@ yarn-error.*
 *TEST*.js
 *.log
 *.tmp
+reports/
 
 # typescript
 *.tsbuildinfo
